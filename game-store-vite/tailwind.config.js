@@ -1,0 +1,41 @@
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx,vue}",
+    "./src/**/*.{html,js}",
+    "./src/components/**/*.{js,jsx}",
+    "./src/pages/**/*.{js,jsx}",
+  ],
+  theme: {
+    extend: {},
+  },
+  plugins: [
+    require('@tailwindcss/line-clamp'),
+  ],
+  safelist: [
+    'bg-red-50',
+    'p-4',
+    'gap-8',
+    'gap-10',
+    'md:gap-10',
+    'bg-gray-50',
+    'py-20',
+    'text-4xl',
+    'font-bold',
+    'mb-4',
+    'text-gray-800',
+    'bg-white',
+    'rounded-2xl',
+    'shadow-lg',
+    'hover:shadow-2xl',
+    'transform',
+    'hover:-translate-y-1',
+    'transition-all',
+    'duration-300',
+    'bg-gradient-to-br',
+    'from-purple-500',
+    'via-blue-500',
+    'to-purple-600',
+  ],
+}
