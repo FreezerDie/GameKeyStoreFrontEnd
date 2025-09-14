@@ -1,0 +1,31 @@
+.staff-dashboard {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.welcome-section {
+  margin-bottom: 2rem;
+}
+
+.welcome-section h1 {
+  color: #1e293b;
+  font-weight: 700;
+  font-size: 1.875rem;
+  margin-bottom: 0.5rem;
+}
+
+.welcome-section p {
+  color: #64748b;
+  font-size: 1rem;
+}
+
+/* Ensure proper spacing and responsive design */
+@media (max-width: 768px) {
+  .staff-dashboard {
+    max-width: none;
+  }
+  
+  .welcome-section h1 {
+    font-size: 1.5rem;
+  }
+}

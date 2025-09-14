@@ -1,5 +1,7 @@
 // Cookie utility functions for managing authentication data
 
+import { decodeJWT, isTokenExpired, getUserFromToken, isStaffUser } from './jwtUtils';
+
 /**
  * Set a cookie with name, value, and expiration
  * @param {string} name - Cookie name
@@ -8,21 +10,30 @@
  * @param {object} options - Additional cookie options
  */
 export const setCookie = (name, value, expiresInDays = 7, options = {}) => {
-  let expires = '';
-  
-  if (expiresInDays) {
-    const date = expiresInDays instanceof Date ? expiresInDays : new Date();
-    if (typeof expiresInDays === 'number') {
-      date.setTime(date.getTime() + (expiresInDays * 24 * 60 * 60 * 1000));
-    }
-    expires = "; expires=" + date.toUTCString();
+  // Check if running in browser environment
+  if (typeof document === 'undefined') {
+    return;
   }
   
-  const path = options.path || '/';
-  const secure = options.secure ? '; secure' : '';
-  const sameSite = options.sameSite ? `; samesite=${options.sameSite}` : '; samesite=lax';
-  
-  document.cookie = `${name}=${value || ""}${expires}; path=${path}${secure}${sameSite}`;
+  try {
+    let expires = '';
+    
+    if (expiresInDays) {
+      const date = expiresInDays instanceof Date ? expiresInDays : new Date();
+      if (typeof expiresInDays === 'number') {
+        date.setTime(date.getTime() + (expiresInDays * 24 * 60 * 60 * 1000));
+      }
+      expires = "; expires=" + date.toUTCString();
+    }
+    
+    const path = options.path || '/';
+    const secure = options.secure ? '; secure' : '';
+    const sameSite = options.sameSite ? `; samesite=${options.sameSite}` : '; samesite=lax';
+    
+    document.cookie = `${name}=${value || ""}${expires}; path=${path}${secure}${sameSite}`;
+  } catch (error) {
+    console.error('Error setting cookie:', error);
+  }
 };
 
 /**
@@ -31,15 +42,25 @@ export const setCookie = (name, value, expiresInDays = 7, options = {}) => {
  * @returns {string|null} Cookie value or null if not found
  */
 export const getCookie = (name) => {
-  const nameEQ = name + "=";
-  const ca = document.cookie.split(';');
-  
-  for (let i = 0; i < ca.length; i++) {
-    let c = ca[i];
-    while (c.charAt(0) === ' ') c = c.substring(1, c.length);
-    if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+  // Check if running in browser environment
+  if (typeof document === 'undefined') {
+    return null;
   }
-  return null;
+  
+  try {
+    const nameEQ = name + "=";
+    const ca = document.cookie.split(';');
+    
+    for (let i = 0; i < ca.length; i++) {
+      let c = ca[i];
+      while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+      if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+    }
+    return null;
+  } catch (error) {
+    console.error('Error reading cookie:', error);
+    return null;
+  }
 };
 
 /**
@@ -48,7 +69,16 @@ export const getCookie = (name) => {
  * @param {string} path - Cookie path (default: '/')
  */
 export const removeCookie = (name, path = '/') => {
-  document.cookie = `${name}=; path=${path}; expires=Thu, 01 Jan 1970 00:00:01 GMT;`;
+  // Check if running in browser environment
+  if (typeof document === 'undefined') {
+    return;
+  }
+  
+  try {
+    document.cookie = `${name}=; path=${path}; expires=Thu, 01 Jan 1970 00:00:01 GMT;`;
+  } catch (error) {
+    console.error('Error removing cookie:', error);
+  }
 };
 
 /**
@@ -139,5 +169,40 @@ export const isAuthenticated = () => {
  */
 export const getCurrentUser = () => {
   const authData = getAuthCookies();
-  return authData ? authData.user : null;
+  if (!authData) {
+    return null;
+  }
+
+  // If we have token, decode it for the most up-to-date user info
+  if (authData.token) {
+    const userFromToken = getUserFromToken(authData.token);
+    if (userFromToken) {
+      return userFromToken;
+    }
+  }
+
+  // Fallback to stored user data
+  return authData.user;
+};
+
+/**
+ * Check if current user is staff
+ * @returns {boolean} True if current user is staff, false otherwise
+ */
+export const isCurrentUserStaff = () => {
+  const authData = getAuthCookies();
+  if (!authData || !authData.token) {
+    return false;
+  }
+
+  return isStaffUser(authData.token);
+};
+
+/**
+ * Get current user's JWT token
+ * @returns {string|null} JWT token or null if not authenticated
+ */
+export const getCurrentToken = () => {
+  const authData = getAuthCookies();
+  return authData ? authData.token : null;
 };

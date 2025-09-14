@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { apiGet } from '../utils/apiUtils';
 
 const CategoriesSection = () => {
@@ -53,9 +54,9 @@ const CategoriesSection = () => {
   if (loading) {
     return (
       <section className="py-20 bg-gray-50">
-        <div className="max-w-6xl mx-auto px-5">
+        <div className="max-w-7xl mx-auto px-5">
           <div className="text-center">
-            <h2 className="text-2xl font-semibold text-gray-700">Loading Categories...</h2>
+            <h2 className="text-2xl font-semibold text-gray-800">Loading Categories...</h2>
           </div>
         </div>
       </section>
@@ -65,7 +66,7 @@ const CategoriesSection = () => {
   if (error) {
     return (
       <section className="py-20 bg-gray-50">
-        <div className="max-w-6xl mx-auto px-5">
+        <div className="max-w-7xl mx-auto px-5">
           <div className="text-center text-gray-600">
             <h2 className="text-2xl font-semibold mb-2">Categories</h2>
             <p>Categories are temporarily unavailable.</p>
@@ -81,7 +82,7 @@ const CategoriesSection = () => {
 
   return (
     <section className="py-20 bg-gray-50">
-      <div className="max-w-6xl mx-auto px-5">
+      <div className="max-w-7xl mx-auto px-5">
         {/* Section Header */}
         <div className="text-center mb-12">
           <h2 className="text-4xl font-bold mb-4 text-gray-800">
@@ -93,23 +94,24 @@ const CategoriesSection = () => {
         </div>
 
         {/* Categories Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {categories.map((category) => (
-            <div 
-              key={category.id} 
-              className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transform hover:-translate-y-2 transition-all duration-300 cursor-pointer group"
+            <Link
+              key={category.id}
+              to={`/games?category=${category.id}`}
+              className="group bg-white rounded-2xl overflow-hidden shadow-lg transition-all duration-300 ease-in-out hover:-translate-y-2 hover:shadow-2xl block no-underline text-inherit"
             >
               {/* Category Image */}
-              <div className="h-44 overflow-hidden relative bg-gradient-to-br from-purple-500 via-blue-500 to-purple-600">
+              <div className="h-44 overflow-hidden relative bg-gradient-to-br from-indigo-400 via-purple-500 to-purple-600">
                 <img 
                   src={getImageUrl(category.cover)} 
                   alt={category.name}
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  className="w-full h-full object-cover transition-transform duration-300 ease-in-out group-hover:scale-105"
                   onError={(e) => {
                     // Fallback if image fails to load
                     e.target.style.display = 'none';
                     e.target.parentNode.innerHTML = `
-                      <div class="flex items-center justify-center h-full text-white text-xl font-bold">
+                      <div class="flex items-center justify-center h-full text-white text-xl font-bold shadow-text">
                         ${category.name}
                       </div>
                     `;
@@ -119,14 +121,14 @@ const CategoriesSection = () => {
               
               {/* Category Info */}
               <div className="p-5">
-                <h3 className="text-xl font-semibold mb-2 text-gray-800 leading-tight">
+                <h3 className="m-0 mb-2.5 text-gray-800 text-xl font-semibold leading-snug">
                   {category.name}
                 </h3>
-                <p className="text-sm text-gray-600 leading-relaxed line-clamp-3">
+                <p className="m-0 text-gray-600 text-sm leading-relaxed overflow-hidden" style={{display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical'}}>
                   {category.description}
                 </p>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
 

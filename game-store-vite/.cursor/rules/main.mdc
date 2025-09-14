@@ -4,7 +4,7 @@ globs:
 alwaysApply: true
 ---
 ## Non-Functional Requirements
-- FrontEnd must use **React JS** with tailwind and vite
+ FrontEnd must use **React JS** with -tailwind andvite 
 - Database must store:  
   - Users  
   - Games (with description, price, category, stock count)  

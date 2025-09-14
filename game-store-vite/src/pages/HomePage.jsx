@@ -1,63 +1,35 @@
+import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import CategoriesSection from '../components/CategoriesSection';
+import { fetchGames } from '../utils/apiUtils';
 import './HomePage.css';
 
 const HomePage = () => {
-  const featuredGames = [
-    {
-      id: 1,
-      title: "Cyberpunk 2077",
-      price: "$29.99",
-      originalPrice: "$59.99",
-      discount: "50%",
-      image: "https://via.placeholder.com/300x200/667eea/ffffff?text=Cyberpunk+2077",
-      rating: 4.2
-    },
-    {
-      id: 2,
-      title: "The Witcher 3",
-      price: "$19.99",
-      originalPrice: "$39.99",
-      discount: "50%",
-      image: "https://via.placeholder.com/300x200/764ba2/ffffff?text=The+Witcher+3",
-      rating: 4.8
-    },
-    {
-      id: 3,
-      title: "Red Dead Redemption 2",
-      price: "$39.99",
-      originalPrice: "$59.99",
-      discount: "33%",
-      image: "https://via.placeholder.com/300x200/ff6b6b/ffffff?text=RDR2",
-      rating: 4.6
-    },
-    {
-      id: 4,
-      title: "Grand Theft Auto V",
-      price: "$14.99",
-      originalPrice: "$29.99",
-      discount: "50%",
-      image: "https://via.placeholder.com/300x200/4ecdc4/ffffff?text=GTA+V",
-      rating: 4.4
-    },
-    {
-      id: 5,
-      title: "Assassin's Creed Valhalla",
-      price: "$24.99",
-      originalPrice: "$49.99",
-      discount: "50%",
-      image: "https://via.placeholder.com/300x200/45b7d1/ffffff?text=AC+Valhalla",
-      rating: 4.1
-    },
-    {
-      id: 6,
-      title: "FIFA 24",
-      price: "$34.99",
-      originalPrice: "$69.99",
-      discount: "50%",
-      image: "https://via.placeholder.com/300x200/f39c12/ffffff?text=FIFA+24",
-      rating: 3.9
-    }
-  ];
+  const [games, setGames] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const loadGames = async () => {
+      try {
+        setLoading(true);
+        const response = await fetchGames();
+        // Take first 6 games for featured section
+        setGames(response.data?.slice(0, 6) || []);
+        setError(null);
+      } catch (err) {
+        console.error('Failed to fetch games:', err);
+        setError('Failed to load games. Please try again later.');
+        // Fallback to empty array if API fails
+        setGames([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadGames();
+  }, []);
+
 
   return (
     <div className="home-page">
@@ -69,7 +41,9 @@ const HomePage = () => {
           <button className="hero-btn">Browse Games</button>
         </div>
         <div className="hero-image">
-          <img src="https://via.placeholder.com/600x400/667eea/ffffff?text=Gaming+Controller" alt="Gaming" />
+          <div className="hero-placeholder">
+            <span>🎮 Gaming Controller</span>
+          </div>
         </div>
       </section>
 
@@ -79,29 +53,81 @@ const HomePage = () => {
       {/* Featured Games Section */}
       <section className="featured-games">
         <div className="container">
-          <h2>Featured Games</h2>
-          <div className="games-grid">
-            {featuredGames.map(game => (
-              <div key={game.id} className="game-card">
-                <div className="game-image">
-                  <img src={game.image} alt={game.title} />
-                  <div className="discount-badge">{game.discount} OFF</div>
-                </div>
-                <div className="game-info">
-                  <h3>{game.title}</h3>
-                  <div className="rating">
-                    <span className="stars">★★★★☆</span>
-                    <span className="rating-score">{game.rating}</span>
-                  </div>
-                  <div className="price-info">
-                    <span className="current-price">{game.price}</span>
-                    <span className="original-price">{game.originalPrice}</span>
-                  </div>
-                  <button className="add-to-cart-btn">Add to Cart</button>
-                </div>
-              </div>
-            ))}
+          <div className="featured-games-header">
+            <h2>Featured Games</h2>
+            <Link to="/games" className="show-all-btn">
+              Show All Games →
+            </Link>
           </div>
+          {loading && (
+            <div className="loading-state">
+              <p>Loading games...</p>
+            </div>
+          )}
+          {error && (
+            <div className="error-state">
+              <p>{error}</p>
+            </div>
+          )}
+          {!loading && !error && (
+            <div className="games-grid">
+              {games.length > 0 ? (
+                games.map((game, index) => {
+                  // Defensive check for game data
+                  if (!game || !game.id) {
+                    console.warn('Invalid game data:', game);
+                    return null;
+                  }
+                  
+                  const gameName = game.name || `Game ${game.id}`;
+                  const gameDescription = game.description || 'No description available';
+                  
+                  return (
+                    <div key={game.id} className="game-card">
+                      <Link to={`/game/${game.id}`} className="game-link">
+                        <div className="game-image">
+                          {game.image ? (
+                            <img 
+                              src={game.image} 
+                              alt={gameName}
+                              onError={(e) => {
+                                // Replace with placeholder div on error
+                                const placeholder = document.createElement('div');
+                                placeholder.className = 'game-image-placeholder';
+                                placeholder.innerHTML = `<span>${gameName.length > 20 ? gameName.substring(0, 20) + '...' : gameName}</span>`;
+                                e.target.parentNode.replaceChild(placeholder, e.target);
+                              }}
+                            />
+                          ) : (
+                            <div className="game-image-placeholder">
+                              <span>{gameName.length > 20 ? gameName.substring(0, 20) + '...' : gameName}</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="game-info">
+                          <h3>{gameName}</h3>
+                          <div className="game-description">
+                            <p>{gameDescription}</p>
+                          </div>
+                          <div className="price-info">
+                            <span className="current-price">$19.99</span>
+                            <span className="original-price">$39.99</span>
+                          </div>
+                        </div>
+                      </Link>
+                      <div className="game-actions">
+                        <button className="add-to-cart-btn">Add to Cart</button>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="no-games">
+                  <p>No games available at the moment.</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </section>
 
