@@ -11,19 +11,10 @@ const StaffGamesPage = () => {
   const [editingGame, setEditingGame] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [formData, setFormData] = useState({
-    title: '',
+    name: '',
     description: '',
-    price: '',
     category_id: '',
-    cover_image: '',
-    trailer_url: '',
-    is_active: true,
-    featured: false,
-    minimum_requirements: '',
-    recommended_requirements: '',
-    developer: '',
-    publisher: '',
-    release_date: ''
+    cover: ''
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -43,7 +34,7 @@ const StaffGamesPage = () => {
         limit: 10,
         ...(searchTerm && { search: searchTerm })
       });
-      const response = await apiGet(`games?${params}`);
+      const response = await apiGet(`admin/games?${params}`);
       setGames(response.data || response || []);
       setTotalPages(response.total_pages || 1);
     } catch (error) {
@@ -56,7 +47,7 @@ const StaffGamesPage = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await apiGet('categories');
+      const response = await apiGet('admin/categories');
       setCategories(response.data || response || []);
     } catch (error) {
       console.error('Error fetching categories:', error);
@@ -68,14 +59,13 @@ const StaffGamesPage = () => {
     try {
       const gameData = {
         ...formData,
-        price: parseFloat(formData.price),
         category_id: parseInt(formData.category_id)
       };
 
       if (editingGame) {
-        await apiPut(`games/${editingGame.id}`, gameData);
+        await apiPut(`admin/games/${editingGame.id}`, gameData);
       } else {
-        await apiPost('games', gameData);
+        await apiPost('admin/games', gameData);
       }
       
       await fetchGames();
@@ -89,19 +79,10 @@ const StaffGamesPage = () => {
   const handleEdit = (game) => {
     setEditingGame(game);
     setFormData({
-      title: game.title,
+      name: game.name,
       description: game.description || '',
-      price: game.price.toString(),
-      category_id: game.category_id.toString(),
-      cover_image: game.cover_image || '',
-      trailer_url: game.trailer_url || '',
-      is_active: game.is_active,
-      featured: game.featured || false,
-      minimum_requirements: game.minimum_requirements || '',
-      recommended_requirements: game.recommended_requirements || '',
-      developer: game.developer || '',
-      publisher: game.publisher || '',
-      release_date: game.release_date || ''
+      category_id: game.category_id ? game.category_id.toString() : '',
+      cover: game.cover || ''
     });
     setShowAddForm(true);
   };
@@ -109,7 +90,7 @@ const StaffGamesPage = () => {
   const handleDelete = async (gameId) => {
     if (window.confirm('Are you sure you want to delete this game? This will also delete all associated game keys.')) {
       try {
-        await apiDelete(`games/${gameId}`);
+        await apiDelete(`admin/games/${gameId}`);
         await fetchGames();
       } catch (error) {
         console.error('Error deleting game:', error);
@@ -120,49 +101,16 @@ const StaffGamesPage = () => {
 
   const resetForm = () => {
     setFormData({
-      title: '',
+      name: '',
       description: '',
-      price: '',
       category_id: '',
-      cover_image: '',
-      trailer_url: '',
-      is_active: true,
-      featured: false,
-      minimum_requirements: '',
-      recommended_requirements: '',
-      developer: '',
-      publisher: '',
-      release_date: ''
+      cover: ''
     });
     setEditingGame(null);
     setShowAddForm(false);
   };
 
-  const toggleActive = async (game) => {
-    try {
-      await apiPut(`games/${game.id}`, {
-        ...game,
-        is_active: !game.is_active
-      });
-      await fetchGames();
-    } catch (error) {
-      console.error('Error toggling game status:', error);
-      setError(error.message);
-    }
-  };
 
-  const toggleFeatured = async (game) => {
-    try {
-      await apiPut(`games/${game.id}`, {
-        ...game,
-        featured: !game.featured
-      });
-      await fetchGames();
-    } catch (error) {
-      console.error('Error toggling featured status:', error);
-      setError(error.message);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -219,28 +167,13 @@ const StaffGamesPage = () => {
             <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Game Title *
+                  Game Name *
                 </label>
                 <input
                   type="text"
                   required
-                  value={formData.title}
-                  onChange={(e) => setFormData({...formData, title: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Price *
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  required
-                  value={formData.price}
-                  onChange={(e) => setFormData({...formData, price: e.target.value})}
+                  value={formData.name}
+                  onChange={(e) => setFormData({...formData, name: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
@@ -264,65 +197,21 @@ const StaffGamesPage = () => {
                 </select>
               </div>
               
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Developer
-                </label>
-                <input
-                  type="text"
-                  value={formData.developer}
-                  onChange={(e) => setFormData({...formData, developer: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Publisher
-                </label>
-                <input
-                  type="text"
-                  value={formData.publisher}
-                  onChange={(e) => setFormData({...formData, publisher: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Release Date
-                </label>
-                <input
-                  type="date"
-                  value={formData.release_date}
-                  onChange={(e) => setFormData({...formData, release_date: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Cover Image URL
-                </label>
-                <input
-                  type="url"
-                  value={formData.cover_image}
-                  onChange={(e) => setFormData({...formData, cover_image: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Trailer URL
-                </label>
-                <input
-                  type="url"
-                  value={formData.trailer_url}
-                  onChange={(e) => setFormData({...formData, trailer_url: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
+               <div>
+                 <label className="block text-sm font-medium text-gray-700 mb-2">
+                   Cover Image Filename
+                 </label>
+                 <input
+                   type="text"
+                   value={formData.cover}
+                   onChange={(e) => setFormData({...formData, cover: e.target.value})}
+                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                   placeholder="e.g., action-game.jpg"
+                 />
+                 <p className="text-xs text-gray-500 mt-1">
+                   Just the filename - will be served from: https://s3.tebi.io/game-key-store/games/
+                 </p>
+               </div>
               
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -334,54 +223,6 @@ const StaffGamesPage = () => {
                   rows="4"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Minimum Requirements
-                </label>
-                <textarea
-                  value={formData.minimum_requirements}
-                  onChange={(e) => setFormData({...formData, minimum_requirements: e.target.value})}
-                  rows="3"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Recommended Requirements
-                </label>
-                <textarea
-                  value={formData.recommended_requirements}
-                  onChange={(e) => setFormData({...formData, recommended_requirements: e.target.value})}
-                  rows="3"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-              
-              <div className="md:col-span-2">
-                <div className="flex space-x-4">
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={formData.is_active}
-                      onChange={(e) => setFormData({...formData, is_active: e.target.checked})}
-                      className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
-                    />
-                    <span className="ml-2 text-sm text-gray-900">Active</span>
-                  </label>
-                  
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={formData.featured}
-                      onChange={(e) => setFormData({...formData, featured: e.target.checked})}
-                      className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
-                    />
-                    <span className="ml-2 text-sm text-gray-900">Featured</span>
-                  </label>
-                </div>
               </div>
               
               <div className="md:col-span-2 flex justify-end space-x-3">
@@ -433,13 +274,7 @@ const StaffGamesPage = () => {
                         Category
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Price
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Keys
+                        Created
                       </th>
                       <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Actions
@@ -451,11 +286,11 @@ const StaffGamesPage = () => {
                       <tr key={game.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
-                            {game.cover_image && (
+                            {game.cover && (
                               <img
                                 className="h-12 w-12 rounded-lg object-cover mr-4"
-                                src={game.cover_image}
-                                alt={game.title}
+                                src={game.cover}
+                                alt={game.name}
                                 onError={(e) => {
                                   e.target.style.display = 'none';
                                 }}
@@ -463,10 +298,10 @@ const StaffGamesPage = () => {
                             )}
                             <div>
                               <div className="text-sm font-medium text-gray-900">
-                                {game.title}
+                                {game.name}
                               </div>
                               <div className="text-sm text-gray-500">
-                                {game.developer} • ID: {game.id}
+                                ID: {game.id}
                               </div>
                             </div>
                           </div>
@@ -474,39 +309,11 @@ const StaffGamesPage = () => {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {game.category_name || 'No category'}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          ${game.price}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex space-x-2">
-                            <button
-                              onClick={() => toggleActive(game)}
-                              className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                                game.is_active
-                                  ? 'bg-green-100 text-green-800 hover:bg-green-200'
-                                  : 'bg-red-100 text-red-800 hover:bg-red-200'
-                              }`}
-                            >
-                              {game.is_active ? 'Active' : 'Inactive'}
-                            </button>
-                            {game.featured && (
-                              <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                                Featured
-                              </span>
-                            )}
-                          </div>
-                        </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {game.available_keys || 0} available
+                          {new Date(game.created_at).toLocaleDateString()}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <div className="flex justify-end space-x-2">
-                            <button
-                              onClick={() => toggleFeatured(game)}
-                              className="text-yellow-600 hover:text-yellow-900 px-2 py-1"
-                            >
-                              {game.featured ? 'Unfeature' : 'Feature'}
-                            </button>
                             <button
                               onClick={() => handleEdit(game)}
                               className="text-blue-600 hover:text-blue-900 px-2 py-1"

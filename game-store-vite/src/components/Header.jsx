@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import './Header.css';
 
 const Header = () => {
   const { authenticated, user, isStaff, logout, loading } = useAuth();
@@ -12,21 +11,19 @@ const Header = () => {
   // Show loading state while auth is initializing
   if (loading) {
     return (
-      <header className="header">
-        <div className="header-container">
+      <header className="bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg sticky top-0 z-50">
+        <div className="max-w-6xl mx-auto px-5 flex justify-between items-center h-[70px]">
           <div className="logo">
-            <Link to="/">
-              <h1>GameStore</h1>
+            <Link to="/" className="no-underline">
+              <h1 className="text-white m-0 text-2xl font-bold">GameStore</h1>
             </Link>
           </div>
-          <nav className="nav">
-            <Link to="/" className="nav-link">Home</Link>
-            <Link to="/games" className="nav-link">Games</Link>
-            <Link to="/deals" className="nav-link">Deals</Link>
-            <Link to="/test-gamekeys" className="nav-link" style={{color: '#ff6b6b'}}>Test Keys</Link>
+          <nav className="hidden md:flex gap-8 items-center">
+            <Link to="/" className="text-white no-underline font-medium text-base transition-all duration-300 px-4 py-2 rounded-md hover:bg-white/10 hover:-translate-y-0.5">Home</Link>
+            <Link to="/games" className="text-white no-underline font-medium text-base transition-all duration-300 px-4 py-2 rounded-md hover:bg-white/10 hover:-translate-y-0.5">Games</Link>
           </nav>
-          <div className="auth-buttons">
-            <div className="auth-loading">Loading...</div>
+          <div className="flex gap-4 items-center">
+            <div className="text-gray-600 text-sm px-4 py-2">Loading...</div>
           </div>
         </div>
       </header>
@@ -34,28 +31,26 @@ const Header = () => {
   }
 
   return (
-    <header className="header">
-      <div className="header-container">
+    <header className="bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg sticky top-0 z-50">
+      <div className="max-w-6xl mx-auto px-5 flex justify-between items-center h-[70px]">
         <div className="logo">
-          <Link to="/">
-            <h1>GameStore</h1>
+          <Link to="/" className="no-underline">
+            <h1 className="text-white m-0 text-2xl font-bold">GameStore</h1>
           </Link>
         </div>
-        <nav className="nav">
-          <Link to="/" className="nav-link">Home</Link>
-          <Link to="/games" className="nav-link">Games</Link>
-          <Link to="/deals" className="nav-link">Deals</Link>
+        <nav className="hidden md:flex gap-8 items-center">
+          <Link to="/" className="text-white no-underline font-medium text-base transition-all duration-300 px-4 py-2 rounded-md hover:bg-white/10 hover:-translate-y-0.5">Home</Link>
+          <Link to="/games" className="text-white no-underline font-medium text-base transition-all duration-300 px-4 py-2 rounded-md hover:bg-white/10 hover:-translate-y-0.5">Games</Link>
           {authenticated && isStaff && (
-            <Link to="/staff" className="nav-link" style={{color: '#10b981', fontWeight: '600'}}>
+            <Link to="/staff" className="text-emerald-500 no-underline font-semibold text-base transition-all duration-300 px-4 py-2 rounded-md hover:bg-white/10 hover:-translate-y-0.5">
               Staff Console
             </Link>
           )}
-          <Link to="/test-gamekeys" className="nav-link" style={{color: '#ff6b6b'}}>Test Keys</Link>
         </nav>
-        <div className="auth-buttons">
+        <div className="flex gap-4 items-center max-md:gap-2.5">
           {authenticated ? (
-            <div className="user-menu">
-              <span className="user-welcome">
+            <div className="flex items-center gap-4 max-md:gap-2.5">
+              <span className="text-white font-medium text-sm opacity-90 whitespace-nowrap max-md:hidden">
                 Welcome, {user?.name}!
                 {isStaff && (
                   <span className="inline-flex items-center px-2 py-1 ml-2 text-xs font-medium bg-green-100 text-green-800 rounded-full">
@@ -63,14 +58,27 @@ const Header = () => {
                   </span>
                 )}
               </span>
-              <button onClick={handleLogout} className="btn btn-outline">
+              <button 
+                onClick={handleLogout} 
+                className="text-white border-2 border-white bg-transparent px-5 py-2.5 rounded-md no-underline font-medium text-sm transition-all duration-300 border-transparent text-center min-w-[80px] cursor-pointer hover:bg-white hover:text-indigo-500 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20 max-md:px-4 max-md:py-2 max-md:text-xs max-md:min-w-[70px]"
+              >
                 Logout
               </button>
             </div>
           ) : (
-            <div className="auth-links">
-              <Link to="/login" className="btn btn-outline">Login</Link>
-              <Link to="/register" className="btn btn-primary">Register</Link>
+            <div className="flex gap-4 items-center max-md:gap-2.5">
+              <Link 
+                to="/login" 
+                className="text-white border-2 border-white bg-transparent px-5 py-2.5 rounded-md no-underline font-medium text-sm transition-all duration-300 border-transparent text-center min-w-[80px] hover:bg-white hover:text-indigo-500 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20 max-md:px-4 max-md:py-2 max-md:text-xs max-md:min-w-[70px]"
+              >
+                Login
+              </Link>
+              <Link 
+                to="/register" 
+                className="bg-white text-indigo-500 border-2 border-white px-5 py-2.5 rounded-md no-underline font-medium text-sm transition-all duration-300 text-center min-w-[80px] hover:bg-transparent hover:text-white hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20 max-md:px-4 max-md:py-2 max-md:text-xs max-md:min-w-[70px]"
+              >
+                Register
+              </Link>
             </div>
           )}
         </div>
