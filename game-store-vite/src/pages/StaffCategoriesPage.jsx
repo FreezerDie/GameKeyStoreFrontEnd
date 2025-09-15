@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { apiGet, apiPost, apiPut, apiDelete, apiPatch } from '../utils/apiUtils';
+import CoverUpload from '../components/CoverUpload';
 
 const StaffCategoriesPage = () => {
   const [categories, setCategories] = useState([]);
@@ -149,21 +150,13 @@ const StaffCategoriesPage = () => {
                 />
               </div>
               
-               <div>
-                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                   Cover Image Filename
-                 </label>
-                 <input
-                   type="text"
-                   value={formData.cover}
-                   onChange={(e) => setFormData({...formData, cover: e.target.value})}
-                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                   placeholder="e.g., strategy-games.jpg"
-                 />
-                 <p className="text-xs text-gray-500 mt-1">
-                   Just the filename - will be served from: https://s3.tebi.io/game-key-store/categories/
-                 </p>
-               </div>
+              <div>
+                <CoverUpload
+                  currentCover={formData.cover}
+                  onCoverChange={(cover) => setFormData({...formData, cover})}
+                  prefix="categories"
+                />
+              </div>
               
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -255,7 +248,7 @@ const StaffCategoriesPage = () => {
                         <div className="flex items-center">
                           {category.cover && (
                             <img
-                              className="h-10 w-10 rounded-lg object-cover mr-4"
+                              className="h-10 w-10 rounded-lg object-cover mr-4 aspect-square" 
                               src={`https://s3.tebi.io/game-key-store/categories/${category.cover}`}
                               alt={category.name}
                               onError={(e) => {
@@ -264,7 +257,7 @@ const StaffCategoriesPage = () => {
                             />
                           )}
                           <div>
-                            <div className="text-sm font-medium text-gray-900">
+                            <div className="text-sm font-medium text-gray-900 line-clamp-1">
                               {category.name}
                             </div>
                             <div className="text-sm text-gray-500">

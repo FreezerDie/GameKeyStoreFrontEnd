@@ -48,7 +48,7 @@ const CategoriesSection = () => {
   }, []);
 
   const getImageUrl = (cover) => {
-    return `https://s3.tebi.io/game-key-store/categories/${cover}`;
+    return `https://s3.tebi.io/game-key-store/categories/covers/${cover}`;
   };
 
   if (loading) {

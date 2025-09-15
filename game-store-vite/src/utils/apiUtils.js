@@ -302,5 +302,291 @@ export const fetchGamesByCategory = async (categoryId, includeCategory = false) 
   }
 };
 
+// S3 and file upload related API functions
+
+/**
+ * Get presigned URL for S3 upload
+ * @param {object} uploadData - Upload configuration
+ * @param {string} uploadData.fileName - Name of the file to upload
+ * @param {string} uploadData.contentType - MIME type of the file
+ * @param {number} uploadData.expirationMinutes - URL expiration time in minutes
+ * @param {string} uploadData.prefix - S3 prefix/folder path
+ * @returns {Promise<object>} Presigned URL data
+ */
+export const getPresignedUploadUrl = async (uploadData) => {
+  const { fileName, contentType, expirationMinutes = 15, prefix } = uploadData;
+  
+  console.log(`[API] Requesting presigned URL for: ${fileName}`);
+  
+  try {
+    const result = await apiPost('/s3/presigned-upload-url', {
+      fileName,
+      contentType,
+      expirationMinutes,
+      prefix
+    });
+    
+    console.log(`[API] Successfully received presigned URL for: ${fileName}`);
+    return result;
+  } catch (error) {
+    console.error(`[API] Error getting presigned URL for ${fileName}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Upload file to S3 using presigned URL
+ * @param {string} uploadUrl - The presigned URL for upload
+ * @param {File} file - The file to upload
+ * @param {string} contentType - MIME type of the file
+ * @returns {Promise<Response>} Upload response
+ */
+export const uploadFileToS3 = async (uploadUrl, file, contentType) => {
+  console.log(`[API] 🚀 Starting S3 upload for file: ${file.name} (${file.size} bytes)`);
+  console.log(`[API] 📍 Upload URL: ${uploadUrl}`);
+  console.log(`[API] 📄 Content Type: ${contentType}`);
+  
+  try {
+    console.log(`[API] ⏰ Creating timeout handler...`);
+    
+    // Create an AbortController for timeout handling
+    const abortController = new AbortController();
+    const timeoutId = setTimeout(() => {
+      console.error(`[API] ⏰ TIMEOUT! Aborting upload after 60 seconds`);
+      abortController.abort();
+    }, 60000); // 60 second timeout - more reasonable for larger files
+    
+    console.log(`[API] 📤 Making fetch request to S3...`);
+    
+    // For S3 presigned URLs, we need to be very careful about headers
+    // The Content-Type should match exactly what was used to generate the presigned URL
+    const requestOptions = {
+      method: 'PUT',
+      body: file,
+      signal: abortController.signal,
+      mode: 'cors', // Explicitly set CORS mode
+      // Only set Content-Type if we have it and it's not empty
+      headers: contentType ? { 'Content-Type': contentType } : {}
+    };
+    
+    const response = await fetch(uploadUrl, requestOptions);
+    
+    console.log(`[API] ✅ Fetch request completed!`);
+    
+    // Clear the timeout since the request completed
+    clearTimeout(timeoutId);
+    console.log(`[API] ⏰ Timeout cleared`);
+    
+    console.log(`[API] 📊 Upload response status: ${response.status}`);
+    console.log(`[API] 📋 Upload response headers:`, [...response.headers.entries()]);
+    
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'Unknown error');
+      console.error(`[API] ❌ Upload failed with status ${response.status}:`, errorText);
+      
+      // Provide more specific error messages based on status code
+      let errorMessage = `Upload failed with status: ${response.status}`;
+      if (response.status === 403) {
+        errorMessage += ' - Access denied. This may be due to incorrect permissions or expired URL.';
+      } else if (response.status === 400) {
+        errorMessage += ' - Bad request. The file or request format may be invalid.';
+      } else if (response.status >= 500) {
+        errorMessage += ' - Server error. Please try again later.';
+      }
+      
+      throw new Error(`${errorMessage} - ${errorText}`);
+    }
+    
+    console.log(`[API] 🎉 Successfully uploaded file: ${file.name}`);
+    return response;
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      console.error(`[API] ⏰ Upload timeout for file ${file.name}`);
+      throw new Error(`Upload timed out after 60 seconds for file: ${file.name}`);
+    }
+    
+    console.error(`[API] ❌ Error uploading file ${file.name}:`, error);
+    console.error(`[API] 🔍 Error details:`, {
+      name: error.name,
+      message: error.message,
+      stack: error.stack
+    });
+    throw error;
+  }
+};
+
+/**
+ * Test S3 URL accessibility with a simple HEAD request
+ * @param {string} uploadUrl - The presigned URL to test
+ * @returns {Promise<boolean>} Whether the URL is accessible
+ */
+export const testS3UrlAccessibility = async (uploadUrl) => {
+  console.log(`[API] 🧪 Testing S3 URL accessibility...`);
+  
+  try {
+    const response = await fetch(uploadUrl.replace(/\?.*$/, ''), {
+      method: 'HEAD',
+      mode: 'cors'
+    });
+    console.log(`[API] 🧪 HEAD test result: ${response.status}`);
+    return response.status < 400;
+  } catch (error) {
+    console.error(`[API] 🧪 HEAD test failed:`, error);
+    return false;
+  }
+};
+
+/**
+ * Alternative S3 upload using XMLHttpRequest (for debugging)
+ * @param {string} uploadUrl - The presigned URL for upload
+ * @param {File} file - The file to upload
+ * @param {string} contentType - MIME type of the file
+ * @returns {Promise<void>} Upload response
+ */
+export const uploadFileToS3_XMLHttpRequest = async (uploadUrl, file, contentType) => {
+  console.log(`[API] 🔄 Using XMLHttpRequest for S3 upload: ${file.name}`);
+  
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    
+    // Set up progress tracking
+    xhr.upload.addEventListener('progress', (event) => {
+      if (event.lengthComputable) {
+        const percentComplete = (event.loaded / event.total) * 100;
+        console.log(`[API] 📈 Upload progress: ${percentComplete.toFixed(1)}%`);
+      }
+    });
+    
+    xhr.addEventListener('load', () => {
+      console.log(`[API] 📊 XMLHttpRequest completed with status: ${xhr.status}`);
+      if (xhr.status >= 200 && xhr.status < 300) {
+        console.log(`[API] 🎉 XMLHttpRequest upload successful`);
+        resolve();
+      } else {
+        console.error(`[API] ❌ XMLHttpRequest upload failed: ${xhr.status} ${xhr.statusText}`);
+        
+        // Provide more specific error messages based on status code
+        let errorMessage = `Upload failed with status: ${xhr.status}`;
+        if (xhr.status === 403) {
+          errorMessage += ' - Access denied. This may be due to incorrect permissions or expired URL.';
+        } else if (xhr.status === 400) {
+          errorMessage += ' - Bad request. The file or request format may be invalid.';
+        } else if (xhr.status >= 500) {
+          errorMessage += ' - Server error. Please try again later.';
+        }
+        
+        reject(new Error(`${errorMessage} ${xhr.statusText ? '- ' + xhr.statusText : ''}`));
+      }
+    });
+    
+    xhr.addEventListener('error', () => {
+      console.error(`[API] ❌ XMLHttpRequest error occurred`);
+      reject(new Error('Network error during upload'));
+    });
+    
+    xhr.addEventListener('timeout', () => {
+      console.error(`[API] ⏰ XMLHttpRequest timeout`);
+      reject(new Error('Upload timeout after 60 seconds'));
+    });
+    
+    xhr.timeout = 60000; // 60 second timeout to match fetch method
+    xhr.open('PUT', uploadUrl);
+    
+    // Set Content-Type header if provided - this is important for S3
+    if (contentType) {
+      xhr.setRequestHeader('Content-Type', contentType);
+    }
+    
+    console.log(`[API] 📤 Starting XMLHttpRequest upload...`);
+    xhr.send(file);
+  });
+};
+
+/**
+ * Complete file upload process: get presigned URL and upload file
+ * @param {File} file - The file to upload
+ * @param {string} prefix - S3 prefix/folder path
+ * @param {number} expirationMinutes - URL expiration time in minutes
+ * @param {boolean} useXHR - Use XMLHttpRequest instead of fetch (for debugging)
+ * @returns {Promise<object>} Upload result with file URL
+ */
+export const uploadFile = async (file, prefix, expirationMinutes = 15, useXHR = false) => {
+  const fileName = file.name;
+  const contentType = file.type;
+  
+  try {
+    // Get presigned URL
+    const presignedData = await getPresignedUploadUrl({
+      fileName,
+      contentType,
+      expirationMinutes,
+      prefix
+    });
+    
+    // Test S3 accessibility first (only on first attempt)
+    if (!useXHR) {
+      const isAccessible = await testS3UrlAccessibility(presignedData.uploadUrl);
+      if (!isAccessible) {
+        console.warn(`[API] ⚠️ S3 URL may not be accessible, but continuing with upload...`);
+      }
+    }
+    
+    // Upload file to S3 - try XMLHttpRequest if fetch fails
+    if (useXHR) {
+      console.log(`[API] 🔄 Using XMLHttpRequest method`);
+      await uploadFileToS3_XMLHttpRequest(presignedData.uploadUrl, file, contentType);
+    } else {
+      console.log(`[API] 🌐 Using fetch method`);
+      await uploadFileToS3(presignedData.uploadUrl, file, contentType);
+    }
+    
+    // Return the final file data
+    return {
+      success: true,
+      fileName: presignedData.fileName,
+      fullPath: presignedData.fullPath,
+      uploadUrl: presignedData.uploadUrl,
+      expiresAt: presignedData.expiresAt,
+      message: presignedData.message
+    };
+  } catch (error) {
+    console.error(`[API] Error in complete upload process for ${fileName}:`, error);
+    
+    // If fetch failed and we haven't tried XHR yet, try it
+    if (!useXHR && (error.message.includes('timeout') || error.message.includes('timed out'))) {
+      console.log(`[API] 🔄 Fetch timed out, trying XMLHttpRequest...`);
+      return await uploadFile(file, prefix, expirationMinutes, true);
+    }
+    
+    throw error;
+  }
+};
+
+/**
+ * Delete file from S3 storage
+ * @param {string} fileName - The full file path/name to delete (e.g., "games/covers/example_image_1694808000.jpg")
+ * @returns {Promise<object>} Delete result
+ */
+export const deleteFile = async (fileName) => {
+  console.log(`[API] Deleting file from S3: ${fileName}`);
+  
+  try {
+    const result = await apiRequest('/s3/delete-file', {
+      method: 'DELETE',
+      body: JSON.stringify({ fileName })
+    });
+    
+    console.log(`[API] Successfully deleted file: ${fileName}`);
+    return {
+      success: true,
+      fileName,
+      message: result.message || 'File deleted successfully'
+    };
+  } catch (error) {
+    console.error(`[API] Error deleting file ${fileName}:`, error);
+    throw error;
+  }
+};
+
 // Export the base API request function for custom use cases
 export { apiRequest };
