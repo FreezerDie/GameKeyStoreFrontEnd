@@ -239,9 +239,9 @@ const AllGamesPage = () => {
                 <div key={game.id} className="bg-white rounded-2xl overflow-hidden shadow-lg transition-all duration-300 flex flex-col hover:-translate-y-1 hover:shadow-xl">
                   <Link to={`/game/${game.id}`} className="no-underline text-inherit flex-1 flex flex-col">
                     <div className="relative overflow-hidden">
-                      {game.image ? (
+                      {game.cover ? (
                         <img 
-                          src={game.image} 
+                          src={`https://s3.tebi.io/game-key-store/games/${game.cover}`} 
                           alt={gameName}
                           className="w-full h-52 object-cover transition-transform duration-300 hover:scale-105"
                           onError={(e) => {

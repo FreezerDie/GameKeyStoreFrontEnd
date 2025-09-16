@@ -72,7 +72,7 @@ const ConsoleLayout = () => {
       {/* Sidebar */}
       <aside className={`w-72 bg-gradient-to-b from-slate-800 to-slate-900 text-white fixed top-0 left-0 h-screen z-[1000] transition-transform duration-300 ease-in-out flex flex-col ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-      } lg:translate-x-0 lg:relative lg:top-auto lg:left-auto lg:h-auto max-[640px]:w-full max-[640px]:max-w-80`}>
+      } lg:translate-x-0 max-[640px]:w-full max-[640px]:max-w-80`}>
         <div className="p-6 border-b border-white/10 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="text-2xl">🎮</span>
@@ -134,7 +134,7 @@ const ConsoleLayout = () => {
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 lg:ml-0 flex flex-col min-h-screen">
+      <div className="flex-1 lg:ml-72 flex flex-col min-h-screen">
         {/* Top Header */}
         <header className="bg-white border-b border-slate-200 py-4 px-8 flex items-center justify-between sticky top-0 z-[100] shadow-sm max-lg:px-4">
           <div className="flex items-center gap-4">

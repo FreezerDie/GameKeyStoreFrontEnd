@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { fetchGameById, fetchGamesByCategory } from '../utils/apiUtils';
+import { useCart } from '../contexts/CartContext';
+import { useAuth } from '../contexts/AuthContext';
 
 const GameDetailPage = () => {
   const { gameId } = useParams();
@@ -9,6 +11,10 @@ const GameDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [relatedLoading, setRelatedLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [addingToCart, setAddingToCart] = useState({});
+  
+  const { addToCart, error: cartError } = useCart();
+  const { authenticated } = useAuth();
 
   useEffect(() => {
     const loadGame = async () => {
@@ -19,7 +25,7 @@ const GameDetailPage = () => {
         // Try to fetch game with category details first
         try {
           console.log('Fetching game with category details...');
-          const response = await fetchGameById(gameId, { includeCategory: true });
+          const response = await fetchGameById(gameId, { includeCategory: true});
           gameData = response.data || response;
           console.log('Game with category fetched successfully:', gameData);
         } catch (categoryErr) {
@@ -89,6 +95,35 @@ const GameDetailPage = () => {
     return colors[gameId % colors.length];
   };
 
+  // Handle adding game key to cart
+  const handleAddToCart = async (gameKeyId) => {
+    // Check if user is authenticated
+    if (!authenticated) {
+      alert('Please login to add items to cart.');
+      return;
+    }
+
+    try {
+      setAddingToCart(prev => ({ ...prev, [gameKeyId]: true }));
+      console.log('Adding game key to cart:', gameKeyId);
+      
+      const success = await addToCart(gameKeyId, 1);
+      
+      if (success) {
+        console.log('Game key added to cart successfully');
+        alert('Game key added to cart successfully!');
+      } else {
+        console.error('Failed to add game key to cart');
+        alert(cartError || 'Failed to add game key to cart. Please try again.');
+      }
+    } catch (error) {
+      console.error('Failed to add game key to cart:', error);
+      alert('Failed to add game key to cart. Please try again.');
+    } finally {
+      setAddingToCart(prev => ({ ...prev, [gameKeyId]: false }));
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 py-10">
@@ -150,9 +185,9 @@ const GameDetailPage = () => {
         {/* Game Details */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 mb-16 bg-white p-10 rounded-3xl shadow-lg max-md:gap-10 max-md:p-8 max-[480px]:p-5">
           <div>
-            {game.image ? (
+            {game.cover ? (
               <img 
-                src={game.image} 
+                src={`https://s3.tebi.io/game-key-store/games/${game.cover}`} 
                 alt={gameName}
                 className="w-full h-auto max-h-96 object-cover rounded-2xl shadow-lg"
                 onError={(e) => {
@@ -203,15 +238,49 @@ const GameDetailPage = () => {
               <p className="text-gray-600 leading-relaxed text-base">{gameDescription}</p>
             </div>
 
+            {/* Game Keys Section */}
             <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-6 rounded-2xl text-white">
-              <div className="flex items-center gap-4 mb-5">
-                <span className="text-3xl font-bold">$19.99</span>
-                <span className="text-lg line-through opacity-80">$39.99</span>
-                <span className="bg-white/20 px-2 py-1 rounded-full text-xs font-semibold">50% OFF</span>
-              </div>
-              <button className="w-full py-4 bg-white text-indigo-500 border-none rounded-xl text-lg font-semibold cursor-pointer transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20">
-                Add to Cart
-              </button>
+              <h3 className="text-xl font-semibold mb-4">Available Game Keys</h3>
+              
+              {(game.game_keys && game.game_keys.length > 0) ? (
+                <div className="space-y-3">
+                  {game.game_keys.map((gameKey, index) => (
+                    <div key={gameKey.id || index} className="bg-white/10 rounded-xl p-4 backdrop-blur-sm">
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <div className="text-lg font-semibold">
+                            ${((gameKey.price || 0))}
+                          </div>
+                          {gameKey.key_type && (
+                            <div className="text-sm opacity-90">
+                              {gameKey.key_type}
+                            </div>
+                          )}
+                        </div>
+                        <button 
+                          onClick={() => handleAddToCart(gameKey.id)}
+                          disabled={addingToCart[gameKey.id] || !authenticated}
+                          className="px-4 py-2 bg-white text-indigo-500 border-none rounded-lg font-semibold cursor-pointer transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                          title={!authenticated ? 'Please login to add items to cart' : ''}
+                        >
+                          {addingToCart[gameKey.id] ? 'Adding...' : (!authenticated ? 'Login to Add' : 'Add to Cart')}
+                        </button>
+                      </div>
+                      {gameKey.created_at && (
+                        <div className="text-xs opacity-75">
+                          Added: {new Date(gameKey.created_at).toLocaleDateString()}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <div className="text-2xl mb-2">🔑</div>
+                  <p className="text-lg font-medium mb-2">No Game Keys Available</p>
+                  <p className="text-sm opacity-90">This game currently has no available keys for purchase.</p>
+                </div>
+              )}
             </div>
 
             <div>
@@ -276,9 +345,9 @@ const GameDetailPage = () => {
                       className="no-underline text-inherit bg-gray-50 rounded-2xl overflow-hidden transition-all duration-300 shadow-sm hover:-translate-y-1 hover:shadow-lg"
                     >
                       <div className="relative w-full h-36 overflow-hidden">
-                        {relatedGame.image ? (
+                        {relatedGame.cover ? (
                           <img 
-                            src={relatedGame.image} 
+                            src={`https://s3.tebi.io/game-key-store/games/${relatedGame.cover}`} 
                             alt={relatedGameName}
                             className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
                             onError={(e) => {

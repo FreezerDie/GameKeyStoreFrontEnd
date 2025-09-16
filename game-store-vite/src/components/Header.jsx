@@ -1,11 +1,24 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useCart } from '../contexts/CartContext';
+import CartDropdown from './CartDropdown';
 
 const Header = () => {
   const { authenticated, user, isStaff, logout, loading } = useAuth();
+  const { cartCount } = useCart();
+  const [isCartOpen, setIsCartOpen] = useState(false);
 
   const handleLogout = async () => {
     await logout();
+  };
+
+  const toggleCart = () => {
+    setIsCartOpen(!isCartOpen);
+  };
+
+  const closeCart = () => {
+    setIsCartOpen(false);
   };
 
   // Show loading state while auth is initializing
@@ -47,6 +60,38 @@ const Header = () => {
             </Link>
           )}
         </nav>
+        
+        {/* Cart Button */}
+        {authenticated && (
+          <div className="relative">
+            <button
+              onClick={toggleCart}
+              className="relative text-white p-2 rounded-md transition-all duration-300 hover:bg-white/10 hover:-translate-y-0.5"
+              title="Shopping Cart"
+            >
+              <svg 
+                className="w-6 h-6" 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  strokeWidth={2} 
+                  d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-1.1 5M7 13l-1.1 5m0 0H17M7 18a2 2 0 11-4 0 2 2 0 014 0zM21 18a2 2 0 11-4 0 2 2 0 014 0z" 
+                />
+              </svg>
+              {cartCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
+                  {cartCount > 99 ? '99+' : cartCount}
+                </span>
+              )}
+            </button>
+            
+            <CartDropdown isOpen={isCartOpen} onClose={closeCart} />
+          </div>
+        )}
         <div className="flex gap-4 items-center max-md:gap-2.5">
           {authenticated ? (
             <div className="flex items-center gap-4 max-md:gap-2.5">

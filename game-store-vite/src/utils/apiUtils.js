@@ -302,6 +302,139 @@ export const fetchGamesByCategory = async (categoryId, includeCategory = false) 
   }
 };
 
+/**
+ * Fetch game keys for a specific game
+ * @param {number|string} gameId - The ID of the game to fetch keys for
+ * @returns {Promise<array>} Array of game keys data
+ */
+export const fetchGameKeys = async (gameId) => {
+  console.log(`[API] Fetching game keys for game ${gameId}`);
+  
+  try {
+    const result = await apiGet(`/games/${gameId}/keys`);
+    console.log(`[API] Successfully fetched game keys for game ${gameId}:`, result?.length || 0, 'keys');
+    return result;
+  } catch (error) {
+    console.error(`[API] Error fetching game keys for game ${gameId}:`, error);
+    throw error;
+  }
+};
+
+// Cart-related API functions
+
+/**
+ * Add a game key to cart
+ * @param {number|string} gameKeyId - The ID of the game key to add to cart
+ * @param {number} quantity - Quantity to add (default: 1)
+ * @returns {Promise<object>} Cart item data
+ */
+export const addGameKeyToCart = async (gameKeyId, quantity = 1) => {
+  console.log(`[API] Adding game key ${gameKeyId} to cart (quantity: ${quantity})`);
+  
+  try {
+    const result = await apiPost('/cart/add', {
+      game_key_id: gameKeyId,
+      quantity: quantity
+    });
+    console.log(`[API] Successfully added game key ${gameKeyId} to cart:`, result);
+    return result;
+  } catch (error) {
+    console.error(`[API] Error adding game key ${gameKeyId} to cart:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Fetch user's cart items
+ * @returns {Promise<object>} Cart data with items
+ */
+export const fetchUserCart = async () => {
+  console.log('[API] Fetching user cart');
+  
+  try {
+    const result = await apiGet('/cart/items');
+    console.log('[API] Successfully fetched cart:', result?.data?.length || 0, 'items');
+    return result;
+  } catch (error) {
+    console.error('[API] Error fetching cart:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update cart item quantity
+ * @param {number|string} cartItemId - The ID of the cart item to update
+ * @param {object} updateData - Update data
+ * @param {number} updateData.quantity - New quantity
+ * @returns {Promise<object>} Updated cart item data
+ * @deprecated This endpoint may no longer be supported by the new backend API
+ * Consider using remove + add approach for quantity updates
+ */
+export const updateCartItem = async (cartItemId, updateData) => {
+  console.log(`[API] Updating cart item ${cartItemId}:`, updateData);
+  
+  try {
+    const result = await apiPut(`/cart/${cartItemId}`, updateData);
+    console.log(`[API] Successfully updated cart item ${cartItemId}:`, result);
+    return result;
+  } catch (error) {
+    console.error(`[API] Error updating cart item ${cartItemId}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Remove item from cart
+ * @param {number|string} cartItemId - The ID of the cart item to remove
+ * @returns {Promise<object>} Response data
+ */
+export const removeCartItem = async (cartItemId) => {
+  console.log(`[API] Removing cart item ${cartItemId}`);
+  
+  try {
+    const result = await apiDelete(`/cart/remove/${cartItemId}`);
+    console.log(`[API] Successfully removed cart item ${cartItemId}`);
+    return result;
+  } catch (error) {
+    console.error(`[API] Error removing cart item ${cartItemId}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Clear entire cart
+ * @returns {Promise<object>} Response data
+ */
+export const clearCart = async () => {
+  console.log('[API] Clearing cart');
+  
+  try {
+    const result = await apiDelete('/cart/clear');  
+    console.log('[API] Successfully cleared cart');
+    return result;
+  } catch (error) {
+    console.error('[API] Error clearing cart:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get cart items count
+ * @returns {Promise<object>} Cart count data
+ */
+export const fetchCartCount = async () => {
+  console.log('[API] Fetching cart count');
+  
+  try {
+    const result = await apiGet('/cart/count');
+    console.log('[API] Successfully fetched cart count:', result?.data || result);
+    return result;
+  } catch (error) {
+    console.error('[API] Error fetching cart count:', error);
+    throw error;
+  }
+};
+
 // S3 and file upload related API functions
 
 /**
@@ -744,6 +877,79 @@ export const deleteFile = async (fileName) => {
     };
   } catch (error) {
     console.error(`[API] Error deleting file ${fileName}:`, error);
+    throw error;
+  }
+};
+
+// Order-related API functions
+
+/**
+ * Create a new order from cart items
+ * @param {object} orderData - Order data including billing info, payment info, and cart items
+ * @returns {Promise<object>} Created order data
+ */
+export const createOrder = async (orderData) => {
+  console.log('[API] Creating order with data:', orderData);
+  
+  try {
+    const result = await apiPost('/cart/checkout', orderData);
+    console.log('[API] Successfully created order:', result);
+    return result;
+  } catch (error) {
+    console.error('[API] Error creating order:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get user's order history
+ * @returns {Promise<array>} Array of user orders
+ */
+export const fetchUserOrders = async () => {
+  console.log('[API] Fetching user orders');
+  
+  try {
+    const result = await apiGet('/orders');
+    console.log('[API] Successfully fetched orders:', result?.data?.length || result?.length || 0, 'orders');
+    return result;
+  } catch (error) {
+    console.error('[API] Error fetching orders:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get specific order details by ID
+ * @param {number|string} orderId - The ID of the order to fetch
+ * @returns {Promise<object>} Order details with items
+ */
+export const fetchOrderById = async (orderId) => {
+  console.log(`[API] Fetching order ${orderId}`);
+  
+  try {
+    const result = await apiGet(`/orders/${orderId}`);
+    console.log(`[API] Successfully fetched order ${orderId}:`, result);
+    return result;
+  } catch (error) {
+    console.error(`[API] Error fetching order ${orderId}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Cancel an order (if supported by backend)
+ * @param {number|string} orderId - The ID of the order to cancel
+ * @returns {Promise<object>} Cancellation result
+ */
+export const cancelOrder = async (orderId) => {
+  console.log(`[API] Cancelling order ${orderId}`);
+  
+  try {
+    const result = await apiPatch(`/orders/${orderId}/cancel`);
+    console.log(`[API] Successfully cancelled order ${orderId}`);
+    return result;
+  } catch (error) {
+    console.error(`[API] Error cancelling order ${orderId}:`, error);
     throw error;
   }
 };

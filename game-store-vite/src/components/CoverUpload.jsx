@@ -11,6 +11,7 @@ import { uploadFile, deleteFile } from '../utils/apiUtils';
  * @param {string} prefix - S3 prefix/folder path (default: 'categories')
  * @param {boolean} disabled - Whether the upload is disabled
  * @param {string} className - Additional CSS classes
+ * @param {string} label - Custom label for the upload section (auto-generated based on prefix if not provided)
  * 
  * Usage examples:
  * - Categories: <CoverUpload prefix="categories/covers" ... />
@@ -23,13 +24,27 @@ const CoverUpload = ({
   onCoverChange, 
   prefix = 'categories',
   disabled = false,
-  className = ''
+  className = '',
+  label = null
 }) => {
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
   const [preview, setPreview] = useState(null);
   const fileInputRef = useRef(null);
+
+  // Generate dynamic label based on prefix
+  const getUploadLabel = () => {
+    if (label) return label;
+    
+    if (prefix.includes('games')) return 'Game Cover';
+    if (prefix.includes('categories')) return 'Category Cover';
+    if (prefix.includes('users') || prefix.includes('avatars')) return 'Profile Picture';
+    
+    return 'Cover Image';
+  };
+
+  const uploadLabel = getUploadLabel();
 
   const handleFileSelect = (event) => {
     const file = event.target.files[0];
@@ -224,7 +239,7 @@ const CoverUpload = ({
       {!disabled && (
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Category Cover
+            {uploadLabel}
           </label>
           <input
             ref={fileInputRef}
@@ -262,7 +277,7 @@ const CoverUpload = ({
           <div className="relative inline-block">
             <img
               src={displayImage}
-              alt="Category cover"
+              alt={uploadLabel}
               className="w-32 h-32 object-cover rounded-lg border border-gray-300"
             />
             

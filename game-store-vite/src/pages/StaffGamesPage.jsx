@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { apiGet, apiPost, apiPut, apiDelete } from '../utils/apiUtils';
+import CoverUpload from '../components/CoverUpload';
 
 const StaffGamesPage = () => {
   const [games, setGames] = useState([]);
@@ -81,7 +82,7 @@ const StaffGamesPage = () => {
     setFormData({
       name: game.name,
       description: game.description || '',
-      category_id: game.category_id ? game.category_id.toString() : '',
+      category_id: (game.category_id || game.category?.id) ? (game.category_id || game.category?.id).toString() : '',
       cover: game.cover || ''
     });
     setShowAddForm(true);
@@ -198,19 +199,11 @@ const StaffGamesPage = () => {
               </div>
               
                <div>
-                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                   Cover Image Filename
-                 </label>
-                 <input
-                   type="text"
-                   value={formData.cover}
-                   onChange={(e) => setFormData({...formData, cover: e.target.value})}
-                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                   placeholder="e.g., action-game.jpg"
+                 <CoverUpload
+                   currentCover={formData.cover}
+                   onCoverChange={(cover) => setFormData({...formData, cover})}
+                   prefix="games"
                  />
-                 <p className="text-xs text-gray-500 mt-1">
-                   Just the filename - will be served from: https://s3.tebi.io/game-key-store/games/
-                 </p>
                </div>
               
               <div className="md:col-span-2">
@@ -289,7 +282,7 @@ const StaffGamesPage = () => {
                             {game.cover && (
                               <img
                                 className="h-12 w-12 rounded-lg object-cover mr-4"
-                                src={game.cover}
+                                src={`https://s3.tebi.io/game-key-store/games/${game.cover}`}
                                 alt={game.name}
                                 onError={(e) => {
                                   e.target.style.display = 'none';
@@ -307,7 +300,7 @@ const StaffGamesPage = () => {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {game.category_name || 'No category'}
+                          {game.category?.name || 'No category'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {new Date(game.created_at).toLocaleDateString()}
