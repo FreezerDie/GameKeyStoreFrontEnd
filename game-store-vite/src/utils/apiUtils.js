@@ -342,9 +342,33 @@ export const getPresignedUploadUrl = async (uploadData) => {
  * @returns {Promise<Response>} Upload response
  */
 export const uploadFileToS3 = async (uploadUrl, file, contentType) => {
+  // Enhanced file validation and debugging
   console.log(`[API] 🚀 Starting S3 upload for file: ${file.name} (${file.size} bytes)`);
   console.log(`[API] 📍 Upload URL: ${uploadUrl}`);
   console.log(`[API] 📄 Content Type: ${contentType}`);
+  
+  // ✅ CRITICAL DEBUG: Validate file object
+  console.log(`[API] 🔍 FILE DEBUG - Complete file object:`, {
+    name: file.name,
+    size: file.size,
+    type: file.type,
+    lastModified: file.lastModified,
+    constructor: file.constructor.name,
+    isFile: file instanceof File,
+    isBlob: file instanceof Blob
+  });
+  
+  // ✅ CRITICAL: Check if file is actually a File object
+  if (!(file instanceof File) && !(file instanceof Blob)) {
+    console.error(`[API] ❌ INVALID FILE OBJECT: Expected File/Blob, got:`, typeof file, file);
+    throw new Error('Invalid file object: Expected File or Blob');
+  }
+  
+  // ✅ CRITICAL: Check if file has content
+  if (file.size === 0) {
+    console.error(`[API] ❌ EMPTY FILE: File has zero size`);
+    throw new Error('File is empty (0 bytes)');
+  }
   
   try {
     console.log(`[API] ⏰ Creating timeout handler...`);
@@ -365,9 +389,31 @@ export const uploadFileToS3 = async (uploadUrl, file, contentType) => {
       body: file,
       signal: abortController.signal,
       mode: 'cors', // Explicitly set CORS mode
-      // Only set Content-Type if we have it and it's not empty
-      headers: contentType ? { 'Content-Type': contentType } : {}
+      headers: {
+        'x-amz-acl': 'public-read',
+        ...(contentType ? { 'Content-Type': contentType } : {})
+      }
     };
+    
+    // ✅ CRITICAL DEBUG: Log the exact request being made
+    console.log(`[API] 🔍 REQUEST DEBUG - Full request options:`, {
+      method: requestOptions.method,
+      bodyType: typeof requestOptions.body,
+      bodySize: requestOptions.body?.size,
+      bodyName: requestOptions.body?.name,
+      bodyConstructor: requestOptions.body?.constructor?.name,
+      headers: requestOptions.headers,
+      mode: requestOptions.mode,
+      hasSignal: !!requestOptions.signal
+    });
+    
+    // ✅ CRITICAL: Verify the body is still the file object
+    if (requestOptions.body !== file) {
+      console.error(`[API] ❌ BODY MISMATCH: Request body is not the original file!`);
+      console.error(`[API] Original file:`, file);
+      console.error(`[API] Request body:`, requestOptions.body);
+      throw new Error('Request body does not match original file object');
+    }
     
     const response = await fetch(uploadUrl, requestOptions);
     
@@ -437,6 +483,69 @@ export const testS3UrlAccessibility = async (uploadUrl) => {
 };
 
 /**
+ * Alternative S3 upload using ArrayBuffer (for debugging file payload issues)
+ * @param {string} uploadUrl - The presigned URL for upload
+ * @param {File} file - The file to upload
+ * @param {string} contentType - MIME type of the file
+ * @returns {Promise<Response>} Upload response
+ */
+export const uploadFileToS3_ArrayBuffer = async (uploadUrl, file, contentType) => {
+  console.log(`[API] 🔄 Using ArrayBuffer method for S3 upload: ${file.name}`);
+  
+  try {
+    // Convert File to ArrayBuffer
+    console.log(`[API] 🔧 Converting file to ArrayBuffer...`);
+    const arrayBuffer = await file.arrayBuffer();
+    
+    console.log(`[API] 🔍 ArrayBuffer conversion result:`, {
+      originalFileSize: file.size,
+      arrayBufferByteLength: arrayBuffer.byteLength,
+      match: file.size === arrayBuffer.byteLength
+    });
+    
+    if (file.size !== arrayBuffer.byteLength) {
+      throw new Error(`ArrayBuffer size mismatch: expected ${file.size}, got ${arrayBuffer.byteLength}`);
+    }
+    
+    // Create request with ArrayBuffer
+    const requestOptions = {
+      method: 'PUT',
+      body: arrayBuffer,
+      mode: 'cors',
+      headers: {
+        'x-amz-acl': 'public-read',
+        ...(contentType ? { 'Content-Type': contentType } : {})
+      }
+    };
+    
+    console.log(`[API] 🔍 ArrayBuffer request options:`, {
+      method: requestOptions.method,
+      bodyType: typeof requestOptions.body,
+      bodyByteLength: requestOptions.body.byteLength,
+      headers: requestOptions.headers,
+      mode: requestOptions.mode
+    });
+    
+    console.log(`[API] 📤 Making ArrayBuffer fetch request to S3...`);
+    const response = await fetch(uploadUrl, requestOptions);
+    
+    console.log(`[API] 📊 ArrayBuffer upload response status: ${response.status}`);
+    
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'Unknown error');
+      console.error(`[API] ❌ ArrayBuffer upload failed with status ${response.status}:`, errorText);
+      throw new Error(`ArrayBuffer upload failed with status: ${response.status} - ${errorText}`);
+    }
+    
+    console.log(`[API] 🎉 ArrayBuffer upload successful`);
+    return response;
+  } catch (error) {
+    console.error(`[API] ❌ ArrayBuffer upload error:`, error);
+    throw error;
+  }
+};
+
+/**
  * Alternative S3 upload using XMLHttpRequest (for debugging)
  * @param {string} uploadUrl - The presigned URL for upload
  * @param {File} file - The file to upload
@@ -492,7 +601,8 @@ export const uploadFileToS3_XMLHttpRequest = async (uploadUrl, file, contentType
     xhr.timeout = 60000; // 60 second timeout to match fetch method
     xhr.open('PUT', uploadUrl);
     
-    // Set Content-Type header if provided - this is important for S3
+    // Set required headers for S3
+    xhr.setRequestHeader('x-amz-acl', 'public-read');
     if (contentType) {
       xhr.setRequestHeader('Content-Type', contentType);
     }
@@ -511,8 +621,36 @@ export const uploadFileToS3_XMLHttpRequest = async (uploadUrl, file, contentType
  * @returns {Promise<object>} Upload result with file URL
  */
 export const uploadFile = async (file, prefix, expirationMinutes = 15, useXHR = false) => {
+  // ✅ CRITICAL DEBUG: Validate file object at the entry point of uploadFile
+  console.log(`[API] 🎯 uploadFile called with parameters:`, {
+    file: {
+      name: file?.name,
+      size: file?.size,
+      type: file?.type,
+      constructor: file?.constructor?.name,
+      isFile: file instanceof File,
+      isBlob: file instanceof Blob
+    },
+    prefix,
+    expirationMinutes,
+    useXHR
+  });
+  
+  // ✅ CRITICAL: Early validation of file parameter
+  if (!file) {
+    console.error(`[API] ❌ uploadFile called with null/undefined file!`);
+    throw new Error('No file provided to uploadFile function');
+  }
+  
+  if (!(file instanceof File) && !(file instanceof Blob)) {
+    console.error(`[API] ❌ uploadFile called with invalid file object:`, typeof file, file);
+    throw new Error('Invalid file object: Expected File or Blob');
+  }
+  
   const fileName = file.name;
   const contentType = file.type;
+  
+  console.log(`[API] 📋 Extracted file properties:`, { fileName, contentType });
   
   try {
     // Get presigned URL
@@ -523,21 +661,43 @@ export const uploadFile = async (file, prefix, expirationMinutes = 15, useXHR = 
       prefix
     });
     
-    // Test S3 accessibility first (only on first attempt)
-    if (!useXHR) {
-      const isAccessible = await testS3UrlAccessibility(presignedData.uploadUrl);
-      if (!isAccessible) {
-        console.warn(`[API] ⚠️ S3 URL may not be accessible, but continuing with upload...`);
-      }
-    }
+    // ❌ DISABLED: HEAD test was causing presigned URL invalidation
+    // The HEAD test strips authentication query parameters and returns 403,
+    // which can cause S3 to mark the presigned URL as compromised/expired
+    // 
+    // Old problematic code:
+    // if (!useXHR) {
+    //   const isAccessible = await testS3UrlAccessibility(presignedData.uploadUrl);
+    //   if (!isAccessible) {
+    //     console.warn(`[API] ⚠️ S3 URL may not be accessible, but continuing with upload...`);
+    //   }
+    // }
     
-    // Upload file to S3 - try XMLHttpRequest if fetch fails
+    console.log(`[API] ℹ️ Skipping HEAD test to preserve presigned URL integrity`);
+    console.log(`[API] 🔗 Proceeding directly to upload with presigned URL`);
+    console.log(`[API] 📅 URL expires at: ${presignedData.expiresAt || 'unknown'}`);
+    console.log(`[API] 🔒 URL includes authentication signature: ${presignedData.uploadUrl.includes('Signature=') ? 'Yes' : 'No'}`);
+    
+    // Upload file to S3 - try different methods if needed
     if (useXHR) {
       console.log(`[API] 🔄 Using XMLHttpRequest method`);
       await uploadFileToS3_XMLHttpRequest(presignedData.uploadUrl, file, contentType);
     } else {
       console.log(`[API] 🌐 Using fetch method`);
-      await uploadFileToS3(presignedData.uploadUrl, file, contentType);
+      
+      try {
+        await uploadFileToS3(presignedData.uploadUrl, file, contentType);
+      } catch (error) {
+        // If the direct File upload failed, try ArrayBuffer method
+        if (error.message.includes('payload') || error.message.includes('body') || error.message.includes('400')) {
+          console.warn(`[API] ⚠️ Direct file upload failed, trying ArrayBuffer method...`);
+          console.warn(`[API] Original error:`, error.message);
+          
+          await uploadFileToS3_ArrayBuffer(presignedData.uploadUrl, file, contentType);
+        } else {
+          throw error; // Re-throw other errors
+        }
+      }
     }
     
     // Return the final file data

@@ -33,31 +33,97 @@ const CoverUpload = ({
 
   const handleFileSelect = (event) => {
     const file = event.target.files[0];
-    if (!file) return;
+    
+    // ✅ CRITICAL DEBUG: Log the complete file selection process
+    console.log(`[CoverUpload] 📁 File selection triggered`);
+    console.log(`[CoverUpload] 🔍 FILES DEBUG - Input files list:`, event.target.files);
+    console.log(`[CoverUpload] 🔍 FILES DEBUG - Files list length:`, event.target.files.length);
+    
+    if (!file) {
+      console.log(`[CoverUpload] ❌ No file selected`);
+      return;
+    }
+
+    // ✅ CRITICAL DEBUG: Validate and log file object immediately after selection
+    console.log(`[CoverUpload] 📄 SELECTED FILE DEBUG:`, {
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      lastModified: file.lastModified,
+      constructor: file.constructor.name,
+      isFile: file instanceof File,
+      isBlob: file instanceof Blob,
+      webkitRelativePath: file.webkitRelativePath
+    });
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
+      console.error(`[CoverUpload] ❌ Invalid file type: ${file.type}`);
       setError('Please select an image file');
       return;
     }
 
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
+      console.error(`[CoverUpload] ❌ File too large: ${file.size} bytes (max 5MB)`);
       setError('File size must be less than 5MB');
       return;
     }
 
+    console.log(`[CoverUpload] ✅ File validation passed, proceeding with upload...`);
     setError('');
     setPreview(URL.createObjectURL(file));
+    
+    // ✅ CRITICAL DEBUG: Log file object right before passing to upload
+    console.log(`[CoverUpload] 🚀 About to call handleUpload with file:`, {
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      isStillFile: file instanceof File,
+      isStillBlob: file instanceof Blob
+    });
+    
     handleUpload(file);
   };
 
   const handleUpload = async (file) => {
+    // ✅ CRITICAL DEBUG: Validate file object at start of upload function
+    console.log(`[CoverUpload] 🎯 handleUpload called with file:`, {
+      name: file?.name,
+      size: file?.size,
+      type: file?.type,
+      isFile: file instanceof File,
+      isBlob: file instanceof Blob,
+      constructor: file?.constructor?.name
+    });
+    
+    if (!file) {
+      console.error(`[CoverUpload] ❌ handleUpload called with null/undefined file!`);
+      setError('No file provided to upload function');
+      return;
+    }
+    
+    if (!(file instanceof File) && !(file instanceof Blob)) {
+      console.error(`[CoverUpload] ❌ handleUpload called with invalid file object:`, typeof file, file);
+      setError('Invalid file object provided to upload function');
+      return;
+    }
+    
     try {
       setUploading(true);
       setError('');
 
       console.log(`[CoverUpload] Starting upload for file: ${file.name} (${file.size} bytes) to prefix: ${prefix}`);
+      
+      // ✅ CRITICAL DEBUG: Log file object right before calling uploadFile
+      console.log(`[CoverUpload] 📤 About to call uploadFile with:`, {
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
+        prefix: prefix,
+        isStillFile: file instanceof File,
+        isStillBlob: file instanceof Blob
+      });
       
       const result = await uploadFile(file, prefix);
       
@@ -82,8 +148,10 @@ const CoverUpload = ({
         errorMessage = 'Upload timed out after 60 seconds. Please check your internet connection and try again, or use a smaller file.';
       } else if (error.message.includes('Network') || error.message.includes('network')) {
         errorMessage = 'Network error. Please check your internet connection and try again.';
+      } else if (error.message.includes('InvalidAccessKeyId') || error.message.includes('Access Key Id')) {
+        errorMessage = '🔧 Server Configuration Issue: S3 storage is not properly configured. Please contact your administrator to set up valid AWS S3 credentials.';
       } else if (error.message.includes('403') || error.message.includes('Forbidden') || error.message.includes('Access denied')) {
-        errorMessage = 'Access denied during upload. This may be due to server configuration issues. Please try again in a few minutes.';
+        errorMessage = 'Access denied during upload. This may be due to server configuration issues or expired upload permissions. Please try again in a few minutes.';
       } else if (error.message.includes('400') || error.message.includes('Bad request')) {
         errorMessage = 'Invalid file format or corrupted file. Please try with a different image.';
       } else if (error.message.includes('413') || error.message.includes('too large')) {
@@ -256,8 +324,32 @@ const CoverUpload = ({
 
       {/* Error Message */}
       {error && (
-        <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-2">
-          {error}
+        <div className={`text-sm rounded-lg p-3 ${
+          error.includes('Server Configuration Issue') 
+            ? 'text-orange-800 bg-orange-50 border border-orange-200' 
+            : 'text-red-600 bg-red-50 border border-red-200'
+        }`}>
+          <div className="flex">
+            <div className="flex-shrink-0">
+              {error.includes('Server Configuration Issue') ? (
+                <svg className="h-4 w-4 text-orange-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+              ) : (
+                <svg className="h-4 w-4 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              )}
+            </div>
+            <div className="ml-2 flex-1">
+              {error}
+              {error.includes('Server Configuration Issue') && (
+                <div className="mt-2 text-xs text-orange-600">
+                  <strong>For developers:</strong> Check your backend S3 configuration including AWS access keys, secret keys, and bucket permissions.
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
