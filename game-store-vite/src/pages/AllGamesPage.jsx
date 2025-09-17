@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { fetchGames, apiGet } from '../utils/apiUtils';
-import './AllGamesPage.css';
+import { getBestGamePrice } from '../utils/priceUtils';
 
 const AllGamesPage = () => {
   const [games, setGames] = useState([]);
@@ -63,14 +63,14 @@ const AllGamesPage = () => {
         if (selectedCategoryId) {
           // Load games for specific category with fallback
           try {
-            response = await fetchGames({ categoryId: selectedCategoryId, includeCategory: true });
+            response = await fetchGames({ categoryId: selectedCategoryId, includeCategory: true, includeGameKeys: true });
           } catch (categoryErr) {
             console.warn('Failed to fetch games with category details, trying without:', categoryErr);
-            response = await fetchGames({ categoryId: selectedCategoryId });
+            response = await fetchGames({ categoryId: selectedCategoryId, includeGameKeys: true });
           }
         } else {
           // Load all games
-          response = await fetchGames();
+          response = await fetchGames({ includeGameKeys: true });
         }
         
         setGames(response.data || []);
@@ -124,11 +124,11 @@ const AllGamesPage = () => {
 
   if (loading) {
     return (
-      <div className="all-games-page">
-        <div className="container">
-          <div className="loading-state">
-            <h2>Loading all games...</h2>
-            <p>Please wait while we fetch the complete game catalog.</p>
+      <div className="min-h-screen bg-gray-50 py-10">
+        <div className="max-w-6xl mx-auto px-5">
+          <div className="text-center py-20 bg-white rounded-3xl shadow-lg mx-auto max-w-2xl">
+            <h2 className="text-indigo-500 text-3xl font-semibold mb-4">Loading all games...</h2>
+            <p className="text-gray-600 text-lg leading-relaxed">Please wait while we fetch the complete game catalog.</p>
           </div>
         </div>
       </div>
@@ -137,12 +137,12 @@ const AllGamesPage = () => {
 
   if (error) {
     return (
-      <div className="all-games-page">
-        <div className="container">
-          <div className="error-state">
-            <h2>Error Loading Games</h2>
-            <p>{error}</p>
-            <Link to="/" className="back-home-btn">
+      <div className="min-h-screen bg-gray-50 py-10">
+        <div className="max-w-6xl mx-auto px-5">
+          <div className="text-center py-20 bg-white rounded-3xl shadow-lg mx-auto max-w-2xl">
+            <h2 className="text-red-500 text-3xl font-semibold mb-4">Error Loading Games</h2>
+            <p className="text-gray-600 text-lg mb-6 leading-relaxed">{error}</p>
+            <Link to="/" className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-br from-indigo-500 to-purple-600 text-white no-underline rounded-lg font-semibold transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-indigo-500/30">
               ← Back to Home
             </Link>
           </div>
@@ -152,23 +152,25 @@ const AllGamesPage = () => {
   }
 
   return (
-    <div className="all-games-page">
-      <div className="container">
+    <div className="min-h-screen bg-gray-50 py-10 max-md:py-5">
+      <div className="max-w-6xl mx-auto px-5 max-[480px]:px-4">
         {/* Page Header */}
-        <div className="page-header">
-          <nav className="breadcrumb">
-            <Link to="/">Home</Link>
-            <span className="separator">{'>'}</span>
-            <Link to="/games">Games</Link>
+        <div className="mb-10 text-center max-md:mb-8">
+          <nav className="flex items-center justify-center gap-2 mb-5 text-sm max-md:text-xs">
+            <Link to="/" className="text-indigo-500 no-underline transition-colors duration-200 hover:text-purple-600">Home</Link>
+            <span className="text-gray-600">{'>'}</span>
+            <Link to="/games" className="text-indigo-500 no-underline transition-colors duration-200 hover:text-purple-600">Games</Link>
             {selectedCategoryId && (
               <>
-                <span className="separator">{'>'}</span>
-                <span>{getSelectedCategoryName()}</span>
+                <span className="text-gray-600">{'>'}</span>
+                <span className="text-gray-800 font-medium">{getSelectedCategoryName()}</span>
               </>
             )}
           </nav>
-          <h1>{selectedCategoryId ? `${getSelectedCategoryName()} Games` : 'All Games'}</h1>
-          <p className="games-count">
+          <h1 className="text-5xl font-bold text-gray-800 mb-2.5 bg-gradient-to-br from-indigo-500 to-purple-600 bg-clip-text text-transparent max-md:text-4xl max-[480px]:text-3xl">
+            {selectedCategoryId ? `${getSelectedCategoryName()} Games` : 'All Games'}
+          </h1>
+          <p className="text-lg text-gray-600 m-0">
             {games.length === 0 
               ? 'No games available' 
               : `${games.length} game${games.length !== 1 ? 's' : ''} available`
@@ -178,18 +180,22 @@ const AllGamesPage = () => {
 
         {/* Category Filter Cards */}
         {!categoriesLoading && categories.length > 0 && (
-          <div className="category-filter-section">
-            <h3>Filter by Category</h3>
-            <div className="category-filter-grid">
+          <div className="mb-10 bg-white p-8 rounded-2xl shadow-lg max-md:p-5 max-md:mb-8 max-[480px]:p-4 max-[480px]:mb-6">
+            <h3 className="text-2xl font-semibold text-gray-800 mb-6 text-center max-md:text-xl max-md:mb-5 max-[480px]:text-lg max-[480px]:mb-4">Filter by Category</h3>
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-4 max-md:grid-cols-[repeat(auto-fit,minmax(120px,1fr))] max-md:gap-3 max-[480px]:grid-cols-[repeat(auto-fit,minmax(100px,1fr))] max-[480px]:gap-2.5">
               {/* All Games Card */}
               <div 
-                className={`category-filter-card ${!selectedCategoryId ? 'active' : ''}`}
+                className={`bg-gray-50 border-2 border-transparent rounded-xl p-4 text-center cursor-pointer transition-all duration-300 hover:bg-white hover:border-indigo-500 hover:-translate-y-0.5 hover:shadow-md max-md:p-3 max-[480px]:p-2.5 ${
+                  !selectedCategoryId 
+                    ? 'bg-gradient-to-br from-indigo-500 to-purple-600 border-indigo-500 text-white -translate-y-0.5 shadow-md shadow-indigo-500/30' 
+                    : ''
+                }`}
                 onClick={() => handleCategorySelect(null)}
               >
-                <div className="category-filter-icon">🕹️</div>
-                <div className="category-filter-info">
-                  <h4>All Games</h4>
-                  <p>View all</p>
+                <div className="text-3xl mb-2 max-md:text-2xl max-md:mb-1.5 max-[480px]:text-xl max-[480px]:mb-1">🕹️</div>
+                <div>
+                  <h4 className={`text-sm font-semibold m-0 mb-1 max-md:text-xs ${!selectedCategoryId ? 'text-white' : ''}`}>All Games</h4>
+                  <p className={`text-xs m-0 opacity-80 max-[480px]:text-[10px] ${!selectedCategoryId ? 'text-white' : ''}`}>View all</p>
                 </div>
               </div>
               
@@ -197,15 +203,19 @@ const AllGamesPage = () => {
               {categories.map(category => (
                 <div 
                   key={category.id}
-                  className={`category-filter-card ${selectedCategoryId === category.id ? 'active' : ''}`}
+                  className={`bg-gray-50 border-2 border-transparent rounded-xl p-4 text-center cursor-pointer transition-all duration-300 hover:bg-white hover:border-indigo-500 hover:-translate-y-0.5 hover:shadow-md max-md:p-3 max-[480px]:p-2.5 ${
+                    selectedCategoryId === category.id 
+                      ? 'bg-gradient-to-br from-indigo-500 to-purple-600 border-indigo-500 text-white -translate-y-0.5 shadow-md shadow-indigo-500/30' 
+                      : ''
+                  }`}
                   onClick={() => handleCategorySelect(category.id)}
                 >
-                  <div className="category-filter-icon">
+                  <div className="text-3xl mb-2 max-md:text-2xl max-md:mb-1.5 max-[480px]:text-xl max-[480px]:mb-1">
                     {getCategoryIcon(category.name)}
                   </div>
-                  <div className="category-filter-info">
-                    <h4>{category.name}</h4>
-                    <p>{category.name.toLowerCase()}</p>
+                  <div>
+                    <h4 className={`text-sm font-semibold m-0 mb-1 max-md:text-xs max-[480px]:text-[10px] ${selectedCategoryId === category.id ? 'text-white' : ''}`}>{category.name}</h4>
+                    <p className={`text-xs m-0 opacity-80 max-[480px]:text-[9px] ${selectedCategoryId === category.id ? 'text-white' : ''}`}>{category.name.toLowerCase()}</p>
                   </div>
                 </div>
               ))}
@@ -215,7 +225,7 @@ const AllGamesPage = () => {
 
         {/* Games Grid */}
         {games.length > 0 ? (
-          <div className="all-games-grid">
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-8 mb-16 max-md:grid-cols-1 max-md:gap-5 max-md:mb-10 max-[480px]:gap-4 max-[480px]:mb-8">
             {games.map((game, index) => {
               // Defensive check for game data
               if (!game || !game.id) {
@@ -225,53 +235,65 @@ const AllGamesPage = () => {
               
               const gameName = game.name || `Game ${game.id}`;
               const gameDescription = game.description || 'No description available';
+              const priceInfo = getBestGamePrice(game);
               
               return (
-                <div key={game.id} className="game-card">
-                  <Link to={`/game/${game.id}`} className="game-link">
-                    <div className="game-image">
-                      {game.image ? (
+                <div key={game.id} className="bg-white rounded-2xl overflow-hidden shadow-lg transition-all duration-300 flex flex-col hover:-translate-y-1 hover:shadow-xl">
+                  <Link to={`/game/${game.id}`} className="no-underline text-inherit flex-1 flex flex-col">
+                    <div className="relative overflow-hidden">
+                      {game.cover ? (
                         <img 
-                          src={game.image} 
+                          src={`https://s3.tebi.io/game-key-store/games/${game.cover}`} 
                           alt={gameName}
+                          className="w-full h-52 object-cover transition-transform duration-300 hover:scale-105"
                           onError={(e) => {
                             // Replace with placeholder div on error
                             const placeholder = document.createElement('div');
-                            placeholder.className = 'game-image-placeholder';
-                            placeholder.innerHTML = `<span>${gameName.length > 20 ? gameName.substring(0, 20) + '...' : gameName}</span>`;
+                            placeholder.className = 'w-full h-52 bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold text-center p-5 box-border';
+                            placeholder.innerHTML = `<span class="text-sm leading-tight break-words">${gameName.length > 20 ? gameName.substring(0, 20) + '...' : gameName}</span>`;
                             e.target.parentNode.replaceChild(placeholder, e.target);
                           }}
                         />
                       ) : (
-                        <div className="game-image-placeholder">
-                          <span>{gameName.length > 20 ? gameName.substring(0, 20) + '...' : gameName}</span>
+                        <div className="w-full h-52 bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold text-center p-5 box-border">
+                          <span className="text-sm leading-tight break-words">{gameName.length > 20 ? gameName.substring(0, 20) + '...' : gameName}</span>
                         </div>
                       )}
                     </div>
-                    <div className="game-info">
-                      <h3>{gameName}</h3>
-                      <div className="game-description">
-                        <p>{gameDescription}</p>
+                    <div className="p-5 flex-1 flex flex-col">
+                      <h3 className="text-xl font-semibold mb-2.5 text-gray-800">{gameName}</h3>
+                      <div className="my-2.5 flex-1">
+                        <p className="text-gray-600 text-sm leading-relaxed overflow-hidden text-ellipsis" style={{display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical'}}>{gameDescription}</p>
                       </div>
-                      <div className="price-info">
-                        <span className="current-price">$19.99</span>
-                        <span className="original-price">$39.99</span>
+                      <div className="flex items-center gap-2.5 mt-auto">
+                        {priceInfo.hasKeys ? (
+                          <>
+                            <span className="text-2xl font-bold text-green-600">{priceInfo.displayPrice}</span>
+                            {priceInfo.keyType && (
+                              <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded font-medium">
+                                {priceInfo.keyType}
+                              </span>
+                            )}
+                          </>
+                        ) : (
+                          <span className="text-lg font-medium text-orange-600">No keys available</span>
+                        )}
                       </div>
                     </div>
                   </Link>
-                  <div className="game-actions">
-                    <button className="add-to-cart-btn">Add to Cart</button>
+                  <div className="px-5 pb-5">
+                    <button className="w-full py-3 bg-gradient-to-br from-indigo-500 to-purple-600 text-white border-none rounded-lg font-semibold cursor-pointer transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md hover:shadow-indigo-500/30">Add to Cart</button>
                   </div>
                 </div>
               );
             })}
           </div>
         ) : (
-          <div className="no-games">
-            <div className="no-games-content">
-              <h3>No Games Available</h3>
-              <p>There are currently no games in the catalog. Please check back later!</p>
-              <Link to="/" className="back-home-btn">
+          <div className="flex justify-center items-center min-h-96">
+            <div className="text-center bg-white py-16 px-10 rounded-3xl shadow-lg max-md:py-12 max-md:px-8 max-[480px]:py-10 max-[480px]:px-5">
+              <h3 className="text-3xl font-semibold text-gray-800 mb-4 max-md:text-2xl">No Games Available</h3>
+              <p className="text-lg text-gray-600 mb-6 leading-relaxed max-md:text-base">There are currently no games in the catalog. Please check back later!</p>
+              <Link to="/" className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-br from-indigo-500 to-purple-600 text-white no-underline rounded-lg font-semibold transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-indigo-500/30">
                 ← Back to Home
               </Link>
             </div>
@@ -279,8 +301,8 @@ const AllGamesPage = () => {
         )}
 
         {/* Back to Home */}
-        <div className="back-section">
-          <Link to="/" className="back-home-btn">
+        <div className="text-center mt-10 max-md:mt-8">
+          <Link to="/" className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-br from-indigo-500 to-purple-600 text-white no-underline rounded-lg font-semibold transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-indigo-500/30">
             ← Back to Home
           </Link>
         </div>

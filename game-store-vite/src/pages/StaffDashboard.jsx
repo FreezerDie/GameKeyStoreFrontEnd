@@ -2,17 +2,16 @@
 
 import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router-dom';
-import './StaffDashboard.css';
 
 const StaffDashboard = () => {
   const { user } = useAuth();
 
   return (
-    <div className="staff-dashboard">
+    <div className="max-w-6xl mx-auto max-md:max-w-none">
       {/* Welcome Section */}
-      <div className="welcome-section">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Dashboard</h1>
-        <p className="text-gray-600">
+      <div className="mb-8 max-md:mb-6">
+        <h1 className="text-slate-800 font-bold text-3xl mb-2 max-md:text-2xl">Dashboard</h1>
+        <p className="text-slate-600 text-base">
           Welcome back, {user?.name} ({user?.role})
         </p>
       </div>

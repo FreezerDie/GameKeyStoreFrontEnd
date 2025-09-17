@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { loginUser } from '../utils/apiUtils';
 import { useAuth } from '../contexts/AuthContext';
-import './LoginPage.css';
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({
@@ -93,75 +92,87 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="login-container">
-      <div className="login-form">
-        <h2>Welcome Back</h2>
-        <p>Sign in to your account</p>
+    <div className="flex justify-center items-center min-h-[calc(100vh-70px)] p-5 bg-gradient-to-br from-indigo-500 to-purple-600">
+      <div className="bg-white p-10 rounded-xl shadow-2xl w-full max-w-md animate-[fadeInUp_0.6s_ease-out] max-[480px]:p-8">
+        <h2 className="text-center mb-2.5 text-gray-800 text-3xl font-semibold max-[480px]:text-2xl max-[480px]:mb-2">Welcome Back</h2>
+        <p className="text-center text-gray-600 mb-8 text-sm max-[480px]:mb-6">Sign in to your account</p>
         
         <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label htmlFor="email">Email</label>
+          <div className="mb-5">
+            <label htmlFor="email" className="block mb-2 text-gray-600 font-medium text-sm">Email</label>
             <input
               type="email"
               id="email"
               name="email"
               value={formData.email}
               onChange={handleInputChange}
-              className={errors.email ? 'error' : ''}
+              className={`w-full px-4 py-3 border-2 rounded-lg text-base transition-all duration-300 bg-white text-gray-800 box-border focus:outline-none focus:shadow-[0_0_0_3px_rgba(102,126,234,0.1)] ${
+                errors.email 
+                  ? 'border-red-500 bg-red-50 focus:border-red-500' 
+                  : 'border-gray-300 focus:border-indigo-500 focus:bg-white'
+              } disabled:opacity-70 disabled:cursor-not-allowed`}
               placeholder="Enter your email"
               disabled={isLoading}
               required
             />
-            {errors.email && <span className="error-message">{errors.email}</span>}
+            {errors.email && <span className="block text-red-500 text-xs mt-1 font-medium">{errors.email}</span>}
           </div>
 
-          <div className="form-group">
-            <label htmlFor="password">Password</label>
+          <div className="mb-5">
+            <label htmlFor="password" className="block mb-2 text-gray-600 font-medium text-sm">Password</label>
             <input
               type="password"
               id="password"
               name="password"
               value={formData.password}
               onChange={handleInputChange}
-              className={errors.password ? 'error' : ''}
+              className={`w-full px-4 py-3 border-2 rounded-lg text-base transition-all duration-300 bg-white text-gray-800 box-border focus:outline-none focus:shadow-[0_0_0_3px_rgba(102,126,234,0.1)] tracking-wider ${
+                errors.password 
+                  ? 'border-red-500 bg-red-50 focus:border-red-500' 
+                  : 'border-gray-300 focus:border-indigo-500 focus:bg-white'
+              } disabled:opacity-70 disabled:cursor-not-allowed placeholder:tracking-normal`}
               placeholder="Enter your password"
               disabled={isLoading}
               required
             />
-            {errors.password && <span className="error-message">{errors.password}</span>}
+            {errors.password && <span className="block text-red-500 text-xs mt-1 font-medium">{errors.password}</span>}
           </div>
 
-          <div className="form-options">
-            <label className="checkbox-container">
+          <div className="flex justify-between items-center mb-6 max-[480px]:flex-col max-[480px]:gap-4 max-[480px]:items-start">
+            <label className="flex items-center text-sm text-gray-600 cursor-pointer select-none">
               <input 
                 type="checkbox" 
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
                 disabled={isLoading}
+                className="mr-2 w-auto"
               />
-              <span className="checkmark"></span>
               Remember me
             </label>
-            <a href="#" className="forgot-password">Forgot password?</a>
+            <a href="#" className="text-indigo-500 no-underline text-sm font-medium hover:underline">Forgot password?</a>
           </div>
 
           <button 
             type="submit" 
-            className="login-button"
+            className="w-full py-3.5 bg-gradient-to-br from-indigo-500 to-purple-600 text-white border-none rounded-lg text-base font-semibold cursor-pointer transition-all duration-300 mb-5 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-indigo-500/30 active:translate-y-0 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:transform-none disabled:hover:shadow-none"
             disabled={isLoading}
           >
             {isLoading ? 'Signing In...' : 'Sign In'}
           </button>
 
           {message && (
-            <div className={`message ${message.includes('successful') ? 'success' : 'error'}`}>
+            <div className={`px-4 py-3 rounded-lg mt-4 text-center text-sm font-medium animate-[slideDown_0.3s_ease-out] ${
+              message.includes('successful') 
+                ? 'bg-green-100 text-green-800 border border-green-300' 
+                : 'bg-red-100 text-red-800 border border-red-300'
+            }`}>
               {message}
             </div>
           )}
         </form>
 
-        <div className="signup-link">
-          <p>Don't have an account? <Link to="/register">Sign up</Link></p>
+        <div className="text-center pt-5 border-t border-gray-300 mt-5">
+          <p className="m-0 text-gray-600 text-sm">Don't have an account? <Link to="/register" className="text-indigo-500 no-underline font-semibold hover:underline">Sign up</Link></p>
         </div>
       </div>
     </div>

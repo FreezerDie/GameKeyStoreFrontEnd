@@ -168,21 +168,53 @@ export const isAuthenticated = () => {
  * @returns {object|null} User data or null if not authenticated
  */
 export const getCurrentUser = () => {
-  const authData = getAuthCookies();
-  if (!authData) {
+  try {
+    const authData = getAuthCookies();
+    if (!authData) {
+      console.log('[Auth] No auth data found in cookies');
+      return null;
+    }
+
+    let userData = null;
+
+    // If we have token, decode it for the most up-to-date user info
+    if (authData.token) {
+      const userFromToken = getUserFromToken(authData.token);
+      if (userFromToken && userFromToken.name) {
+        console.log('[Auth] Successfully retrieved user from token:', userFromToken.name);
+        userData = userFromToken;
+      }
+    }
+
+    // Fallback to stored user data if token parsing failed or didn't have name
+    if (!userData && authData.user) {
+      // Apply same fallback logic to stored user data
+      const storedUser = authData.user;
+      const displayName = storedUser.name || storedUser.username || storedUser.email?.split('@')[0] || 'User';
+      
+      userData = {
+        ...storedUser,
+        name: displayName
+      };
+      console.log('[Auth] Using stored user data with fallback name:', displayName);
+    }
+
+    if (!userData) {
+      console.warn('[Auth] No valid user data found');
+      return null;
+    }
+
+    // Final safety check to ensure we always have a name
+    if (!userData.name) {
+      userData.name = userData.username || userData.email?.split('@')[0] || 'User';
+      console.log('[Auth] Applied final fallback name:', userData.name);
+    }
+
+    return userData;
+  } catch (error) {
+    console.error('[Auth] Error getting current user:', error);
     return null;
   }
-
-  // If we have token, decode it for the most up-to-date user info
-  if (authData.token) {
-    const userFromToken = getUserFromToken(authData.token);
-    if (userFromToken) {
-      return userFromToken;
-    }
-  }
-
-  // Fallback to stored user data
-  return authData.user;
 };
 
 /**

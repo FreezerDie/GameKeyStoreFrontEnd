@@ -1,11 +1,11 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
+import { CartProvider } from './contexts/CartContext';
 import PublicLayout from './layouts/PublicLayout';
 import ConsoleLayout from './layouts/ConsoleLayout';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import RegistrationPage from './pages/RegistrationPage';
-import GameKeysPage from './pages/GameKeysPage';
 import GameDetailPage from './pages/GameDetailPage';
 import AllGamesPage from './pages/AllGamesPage';
 import StaffRoute from './components/StaffRoute';
@@ -13,39 +13,43 @@ import StaffDashboard from './pages/StaffDashboard';
 import StaffCategoriesPage from './pages/StaffCategoriesPage';
 import StaffGamesPage from './pages/StaffGamesPage';
 import StaffGameKeysPage from './pages/StaffGameKeysPage';
-import './App.css';
-
-
+import CheckoutPage from './pages/CheckoutPage';
+import CartPage from './pages/CartPage';
+import ProfilePage from './pages/ProfilePage';
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <div className="App">
-          <Routes>
-            {/* Public Routes with PublicLayout */}
-            <Route path="/" element={<PublicLayout />}>
-              <Route index element={<HomePage />} />
-              <Route path="games" element={<AllGamesPage />} />
-              <Route path="login" element={<LoginPage />} />
-              <Route path="register" element={<RegistrationPage />} />
-              <Route path="test-gamekeys" element={<GameKeysPage />} />
-              <Route path="game/:gameId" element={<GameDetailPage />} />
-            </Route>
+      <CartProvider>
+        <Router>
+          <div>
+            <Routes>
+              {/* Public Routes with PublicLayout */}
+              <Route path="/" element={<PublicLayout />}>
+                <Route index element={<HomePage />} />
+                <Route path="games" element={<AllGamesPage />} />
+                <Route path="login" element={<LoginPage />} />
+                <Route path="register" element={<RegistrationPage />} />
+                <Route path="game/:gameId" element={<GameDetailPage />} />
+                <Route path="cart" element={<CartPage />} />
+                <Route path="checkout" element={<CheckoutPage />} />
+                <Route path="profile" element={<ProfilePage />} />
+              </Route>
 
-            {/* Staff Routes with ConsoleLayout - Protected */}
-            <Route path="/staff" element={
-              <StaffRoute>
-                <ConsoleLayout />
-              </StaffRoute>
-            }>
-              <Route index element={<StaffDashboard />} />
-              <Route path="categories" element={<StaffCategoriesPage />} />
-              <Route path="games" element={<StaffGamesPage />} />
-              <Route path="game-keys" element={<StaffGameKeysPage />} />
-            </Route>
-          </Routes>
-        </div>
-      </Router>
+              {/* Staff Routes with ConsoleLayout - Protected */}
+              <Route path="/staff" element={
+                <StaffRoute>
+                  <ConsoleLayout />
+                </StaffRoute>
+              }>
+                <Route index element={<StaffDashboard />} />
+                <Route path="categories" element={<StaffCategoriesPage />} />
+                <Route path="games" element={<StaffGamesPage />} />
+                <Route path="game-keys" element={<StaffGameKeysPage />} />
+              </Route>
+            </Routes>
+          </div>
+        </Router>
+      </CartProvider>
     </AuthProvider>
   )
 }

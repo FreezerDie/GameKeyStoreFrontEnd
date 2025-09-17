@@ -1,7 +1,8 @@
 // Staff Categories Management Console Page
 
 import { useState, useEffect } from 'react';
-import { apiGet, apiPost, apiPut, apiDelete } from '../utils/apiUtils';
+import { apiGet, apiPost, apiPut, apiDelete, apiPatch } from '../utils/apiUtils';
+import CoverUpload from '../components/CoverUpload';
 
 const StaffCategoriesPage = () => {
   const [categories, setCategories] = useState([]);
@@ -24,7 +25,7 @@ const StaffCategoriesPage = () => {
     try {
       setLoading(true);
       setError('');
-      const response = await apiGet('categories');
+      const response = await apiGet('admin/categories');
       setCategories(response.data || response || []);
     } catch (error) {
       console.error('Error fetching categories:', error);
@@ -39,10 +40,10 @@ const StaffCategoriesPage = () => {
     try {
       if (editingCategory) {
         // Update category
-        await apiPut(`categories/${editingCategory.id}`, formData);
+        await apiPut(`admin/categories/${editingCategory.id}`, formData);
       } else {
         // Create category
-        await apiPost('categories', formData);
+        await apiPost('admin/categories', formData);
       }
       
       await fetchCategories();
@@ -67,7 +68,7 @@ const StaffCategoriesPage = () => {
   const handleDelete = async (categoryId) => {
     if (window.confirm('Are you sure you want to delete this category?')) {
       try {
-        await apiDelete(`categories/${categoryId}`);
+        await apiDelete(`admin/categories/${categoryId}`);
         await fetchCategories();
       } catch (error) {
         console.error('Error deleting category:', error);
@@ -87,18 +88,16 @@ const StaffCategoriesPage = () => {
     setShowAddForm(false);
   };
 
-  const toggleActive = async (category) => {
+  const toggleActive = async (categoryId) => {
     try {
-      await apiPut(`categories/${category.id}`, {
-        ...category,
-        is_active: !category.is_active
-      });
+      await apiPatch(`admin/categories/${categoryId}/toggle-active`);
       await fetchCategories();
     } catch (error) {
       console.error('Error toggling category status:', error);
       setError(error.message);
     }
   };
+
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -152,15 +151,10 @@ const StaffCategoriesPage = () => {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Cover Image URL
-                </label>
-                <input
-                  type="url"
-                  value={formData.cover}
-                  onChange={(e) => setFormData({...formData, cover: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="https://example.com/image.jpg"
+                <CoverUpload
+                  currentCover={formData.cover}
+                  onCoverChange={(cover) => setFormData({...formData, cover})}
+                  prefix="categories"
                 />
               </div>
               
@@ -254,7 +248,7 @@ const StaffCategoriesPage = () => {
                         <div className="flex items-center">
                           {category.cover && (
                             <img
-                              className="h-10 w-10 rounded-lg object-cover mr-4"
+                              className="h-10 w-10 rounded-lg object-cover mr-4 aspect-square" 
                               src={`https://s3.tebi.io/game-key-store/categories/${category.cover}`}
                               alt={category.name}
                               onError={(e) => {
@@ -263,7 +257,7 @@ const StaffCategoriesPage = () => {
                             />
                           )}
                           <div>
-                            <div className="text-sm font-medium text-gray-900">
+                            <div className="text-sm font-medium text-gray-900 line-clamp-1">
                               {category.name}
                             </div>
                             <div className="text-sm text-gray-500">

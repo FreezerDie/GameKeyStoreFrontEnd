@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import CategoriesSection from '../components/CategoriesSection';
 import { fetchGames } from '../utils/apiUtils';
-import './HomePage.css';
+import { getBestGamePrice } from '../utils/priceUtils';
 
 const HomePage = () => {
   const [games, setGames] = useState([]);
@@ -13,7 +13,7 @@ const HomePage = () => {
     const loadGames = async () => {
       try {
         setLoading(true);
-        const response = await fetchGames();
+        const response = await fetchGames({ includeGameKeys: true });
         // Take first 6 games for featured section
         setGames(response.data?.slice(0, 6) || []);
         setError(null);
@@ -32,16 +32,16 @@ const HomePage = () => {
 
 
   return (
-    <div className="home-page">
+    <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="hero">
-        <div className="hero-content">
-          <h1>Welcome to GameStore</h1>
-          <p>Discover the best game keys at unbeatable prices</p>
-          <button className="hero-btn">Browse Games</button>
+      <section className="bg-gradient-to-br from-indigo-500 to-purple-600 py-20 px-5 flex items-center justify-between max-w-6xl mx-auto gap-16 max-md:flex-col max-md:text-center max-md:py-12 max-md:gap-10">
+        <div className="flex-1 text-white">
+          <h1 className="text-6xl font-bold mb-5 leading-tight max-md:text-5xl max-[480px]:text-4xl">Welcome to GameStore</h1>
+          <p className="text-xl mb-8 opacity-90 max-md:text-lg">Discover the best game keys at unbeatable prices</p>
+          <button className="bg-white text-indigo-500 px-8 py-4 border-none rounded-lg text-lg font-semibold cursor-pointer transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20">Browse Games</button>
         </div>
-        <div className="hero-image">
-          <div className="hero-placeholder">
+        <div className="flex-1 text-center">
+          <div className="w-full max-w-[600px] h-[400px] bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl shadow-2xl flex items-center justify-center text-white text-2xl font-semibold text-center max-md:h-80">
             <span>🎮 Gaming Controller</span>
           </div>
         </div>
@@ -51,26 +51,26 @@ const HomePage = () => {
       <CategoriesSection />
 
       {/* Featured Games Section */}
-      <section className="featured-games">
-        <div className="container">
-          <div className="featured-games-header">
-            <h2>Featured Games</h2>
-            <Link to="/games" className="show-all-btn">
+      <section className="py-20 bg-gray-50">
+        <div className="max-w-6xl mx-auto px-5">
+          <div className="flex justify-between items-center mb-12 max-md:flex-col max-md:gap-5 max-md:text-center">
+            <h2 className="text-4xl font-bold text-gray-800 m-0 max-md:text-3xl">Featured Games</h2>
+            <Link to="/games" className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-br from-indigo-500 to-purple-600 text-white no-underline rounded-lg font-semibold text-base transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-indigo-500/30">
               Show All Games →
             </Link>
           </div>
           {loading && (
-            <div className="loading-state">
-              <p>Loading games...</p>
+            <div className="text-center py-16">
+              <p className="text-xl text-indigo-500 font-medium">Loading games...</p>
             </div>
           )}
           {error && (
-            <div className="error-state">
-              <p>{error}</p>
+            <div className="text-center py-16">
+              <p className="text-lg text-red-500 font-medium">{error}</p>
             </div>
           )}
           {!loading && !error && (
-            <div className="games-grid">
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-8 max-md:grid-cols-1 max-md:gap-5">
               {games.length > 0 ? (
                 games.map((game, index) => {
                   // Defensive check for game data
@@ -81,49 +81,61 @@ const HomePage = () => {
                   
                   const gameName = game.name || `Game ${game.id}`;
                   const gameDescription = game.description || 'No description available';
+                  const priceInfo = getBestGamePrice(game);
                   
                   return (
-                    <div key={game.id} className="game-card">
-                      <Link to={`/game/${game.id}`} className="game-link">
-                        <div className="game-image">
-                          {game.image ? (
+                    <div key={game.id} className="bg-white rounded-2xl overflow-hidden shadow-lg transition-all duration-300 flex flex-col hover:-translate-y-1 hover:shadow-xl">
+                      <Link to={`/game/${game.id}`} className="no-underline text-inherit flex-1 flex flex-col">
+                        <div className="relative overflow-hidden">
+                          {game.cover ? (
                             <img 
-                              src={game.image} 
+                              src={`https://s3.tebi.io/game-key-store/games/${game.cover}`} 
                               alt={gameName}
+                              className="w-full h-52 object-cover transition-transform duration-300 hover:scale-105"
                               onError={(e) => {
                                 // Replace with placeholder div on error
                                 const placeholder = document.createElement('div');
-                                placeholder.className = 'game-image-placeholder';
-                                placeholder.innerHTML = `<span>${gameName.length > 20 ? gameName.substring(0, 20) + '...' : gameName}</span>`;
+                                placeholder.className = 'w-full h-52 bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold text-center p-5 box-border';
+                                placeholder.innerHTML = `<span class="text-sm leading-tight break-words">${gameName.length > 20 ? gameName.substring(0, 20) + '...' : gameName}</span>`;
                                 e.target.parentNode.replaceChild(placeholder, e.target);
                               }}
                             />
                           ) : (
-                            <div className="game-image-placeholder">
-                              <span>{gameName.length > 20 ? gameName.substring(0, 20) + '...' : gameName}</span>
+                            <div className="w-full h-52 bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold text-center p-5 box-border">
+                              <span className="text-sm leading-tight break-words">{gameName.length > 20 ? gameName.substring(0, 20) + '...' : gameName}</span>
                             </div>
                           )}
                         </div>
-                        <div className="game-info">
-                          <h3>{gameName}</h3>
-                          <div className="game-description">
-                            <p>{gameDescription}</p>
+                        <div className="p-5 flex-1 flex flex-col">
+                          <h3 className="text-xl font-semibold mb-2.5 text-gray-800">{gameName}</h3>
+                          <div className="my-2.5 flex-1">
+                            <p className="text-gray-600 text-sm leading-relaxed overflow-hidden text-ellipsis" style={{display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical'}}>{gameDescription}</p>
                           </div>
-                          <div className="price-info">
-                            <span className="current-price">$19.99</span>
-                            <span className="original-price">$39.99</span>
+                          <div className="flex items-center gap-2.5 mb-4">
+                            {priceInfo.hasKeys ? (
+                              <>
+                                <span className="text-2xl font-bold text-green-600">{priceInfo.displayPrice}</span>
+                                {priceInfo.keyType && (
+                                  <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded font-medium">
+                                    {priceInfo.keyType}
+                                  </span>
+                                )}
+                              </>
+                            ) : (
+                              <span className="text-lg font-medium text-orange-600">No keys available</span>
+                            )}
                           </div>
                         </div>
                       </Link>
-                      <div className="game-actions">
-                        <button className="add-to-cart-btn">Add to Cart</button>
+                      <div className="px-5 pb-5">
+                        <button className="w-full py-3 bg-gradient-to-br from-indigo-500 to-purple-600 text-white border-none rounded-lg font-semibold cursor-pointer transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md hover:shadow-indigo-500/30">Add to Cart</button>
                       </div>
                     </div>
                   );
                 })
               ) : (
-                <div className="no-games">
-                  <p>No games available at the moment.</p>
+                <div className="text-center py-16">
+                  <p className="text-lg text-gray-600 font-medium">No games available at the moment.</p>
                 </div>
               )}
             </div>
@@ -132,38 +144,47 @@ const HomePage = () => {
       </section>
 
       {/* Stats Section */}
-      <section className="stats">
-        <div className="container">
-          <div className="stats-grid">
-            <div className="stat-item">
-              <h3>10,000+</h3>
-              <p>Games Available</p>
+      <section className="py-20 bg-white">
+        <div className="max-w-6xl mx-auto px-5">
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-10 text-center max-md:grid-cols-2 max-md:gap-8 max-[480px]:grid-cols-1">
+            <div>
+              <h3 className="text-5xl font-bold text-indigo-500 mb-2.5 max-md:text-4xl">10,000+</h3>
+              <p className="text-lg text-gray-600 font-medium">Games Available</p>
             </div>
-            <div className="stat-item">
-              <h3>50,000+</h3>
-              <p>Happy Customers</p>
+            <div>
+              <h3 className="text-5xl font-bold text-indigo-500 mb-2.5 max-md:text-4xl">50,000+</h3>
+              <p className="text-lg text-gray-600 font-medium">Happy Customers</p>
             </div>
-            <div className="stat-item">
-              <h3>99.9%</h3>
-              <p>Uptime</p>
+            <div>
+              <h3 className="text-5xl font-bold text-indigo-500 mb-2.5 max-md:text-4xl">99.9%</h3>
+              <p className="text-lg text-gray-600 font-medium">Uptime</p>
             </div>
-            <div className="stat-item">
-              <h3>24/7</h3>
-              <p>Customer Support</p>
+            <div>
+              <h3 className="text-5xl font-bold text-indigo-500 mb-2.5 max-md:text-4xl">24/7</h3>
+              <p className="text-lg text-gray-600 font-medium">Customer Support</p>
             </div>
           </div>
         </div>
       </section>
 
       {/* Newsletter Section */}
-      <section className="newsletter">
-        <div className="container">
-          <div className="newsletter-content">
-            <h2>Stay Updated</h2>
-            <p>Get the latest deals and new releases delivered to your inbox</p>
-            <div className="newsletter-form">
-              <input type="email" placeholder="Enter your email" />
-              <button type="submit">Subscribe</button>
+      <section className="py-20 bg-gradient-to-br from-indigo-500 to-purple-600">
+        <div className="max-w-6xl mx-auto px-5">
+          <div className="text-center text-white">
+            <h2 className="text-4xl font-bold mb-4 max-md:text-3xl">Stay Updated</h2>
+            <p className="text-lg mb-8 opacity-90">Get the latest deals and new releases delivered to your inbox</p>
+            <div className="flex max-w-lg mx-auto gap-4 max-md:flex-col">
+              <input 
+                type="email" 
+                placeholder="Enter your email" 
+                className="flex-1 py-4 px-5 border-none rounded-lg text-base outline-none"
+              />
+              <button 
+                type="submit"
+                className="py-4 px-8 bg-white text-indigo-500 border-none rounded-lg font-semibold cursor-pointer transition-all duration-300 whitespace-nowrap hover:-translate-y-0.5 hover:shadow-md hover:shadow-black/20"
+              >
+                Subscribe
+              </button>
             </div>
           </div>
         </div>
