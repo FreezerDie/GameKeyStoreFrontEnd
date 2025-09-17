@@ -14,6 +14,8 @@ import StaffCategoriesPage from './pages/StaffCategoriesPage';
 import StaffGamesPage from './pages/StaffGamesPage';
 import StaffGameKeysPage from './pages/StaffGameKeysPage';
 import CheckoutPage from './pages/CheckoutPage';
+import CartPage from './pages/CartPage';
+import ProfilePage from './pages/ProfilePage';
 function App() {
   return (
     <AuthProvider>
@@ -28,7 +30,9 @@ function App() {
                 <Route path="login" element={<LoginPage />} />
                 <Route path="register" element={<RegistrationPage />} />
                 <Route path="game/:gameId" element={<GameDetailPage />} />
+                <Route path="cart" element={<CartPage />} />
                 <Route path="checkout" element={<CheckoutPage />} />
+                <Route path="profile" element={<ProfilePage />} />
               </Route>
 
               {/* Staff Routes with ConsoleLayout - Protected */}

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import { createOrder } from '../utils/apiUtils';
+import { formatPrice } from '../utils/moneyUtils';
 
 const CheckoutPage = () => {
   const navigate = useNavigate();
@@ -68,8 +69,7 @@ const CheckoutPage = () => {
           quantity: item.quantity || 1,
           price: item.game_key?.price || 0
         })),
-        totalAmount: cartTotal,
-        userEmail: user?.email, // Use logged in user's email
+        total_price: cartTotal,
         comment: comment.trim() || null // Include comment if provided
       };
 
@@ -95,10 +95,6 @@ const CheckoutPage = () => {
     }
   };
 
-  // Format price helper
-  const formatPrice = (priceInCents) => {
-    return `$${((priceInCents || 0) / 100).toFixed(2)}`;
-  };
 
   // Loading state
   if (cartLoading) {
@@ -173,28 +169,36 @@ const CheckoutPage = () => {
               {/* Cart Items */}
               <div className="space-y-4 mb-6">
                 {cartItems.map((item) => {
+                  // Handle both new structure (game and game_key directly on item) 
+                  // and old structure (game nested in game_key)
                   const gameKey = item.game_key || {};
-                  const game = gameKey.game || {};
-                  const price = gameKey.price || 0;
+                  const game = item.game || gameKey.game || {};
+                  const price = item.game_key?.price || gameKey.price || 0;
                   const quantity = item.quantity || 1;
                   
                   return (
                     <div key={item.id} className="flex items-center gap-3">
-                      <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
+                      <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center relative overflow-hidden">
                         {game.cover ? (
-                          <img 
-                            src={`https://s3.tebi.io/game-key-store/games/${game.cover}`}
-                            alt={game.name || 'Game'}
-                            className="w-full h-full object-cover rounded-lg"
-                            onError={(e) => {
-                              e.target.style.display = 'none';
-                              e.target.nextSibling.style.display = 'flex';
-                            }}
-                          />
-                        ) : null}
-                        <div className="text-white font-semibold text-xs text-center leading-tight">
-                          {game.name?.substring(0, 6) || 'Game'}
-                        </div>
+                          <>
+                            <img 
+                              src={`https://s3.tebi.io/game-key-store/games/${game.cover}`}
+                              alt={game.name || 'Game'}
+                              className="w-full h-full object-cover rounded-lg"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                                e.target.parentNode.querySelector('.fallback-text').style.display = 'flex';
+                              }}
+                            />
+                            <div className="fallback-text absolute inset-0 text-white font-semibold text-xs text-center leading-tight items-center justify-center px-1 hidden">
+                              {game.name?.substring(0, 6) || 'Game'}
+                            </div>
+                          </>
+                        ) : (
+                          <div className="text-white font-semibold text-xs text-center leading-tight px-1">
+                            {game.name?.substring(0, 6) || 'Game'}
+                          </div>
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <h4 className="font-medium text-gray-800 truncate text-sm">

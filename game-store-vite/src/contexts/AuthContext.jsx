@@ -38,17 +38,29 @@ export const AuthProvider = ({ children }) => {
           const userData = getCurrentUser();
           const staffStatus = isCurrentUserStaff();
           
+          console.log('[AuthContext] Initializing auth state:', {
+            isAuth,
+            userData: userData ? { ...userData, name: userData.name } : null,
+            staffStatus
+          });
+          
           setAuthenticated(isAuth);
           setUser(userData);
           setIsStaff(staffStatus);
+          
+          // Additional check to ensure user data is consistent
+          if (isAuth && userData && !userData.name) {
+            console.warn('[AuthContext] Warning: User is authenticated but has no display name');
+          }
         } else {
           // Server-side or initial load - set defaults
+          console.log('[AuthContext] Server-side initialization');
           setAuthenticated(false);
           setUser(null);
           setIsStaff(false);
         }
       } catch (error) {
-        console.error('Error initializing auth:', error);
+        console.error('[AuthContext] Error initializing auth:', error);
         setAuthenticated(false);
         setUser(null);
         setIsStaff(false);
@@ -65,10 +77,25 @@ export const AuthProvider = ({ children }) => {
 
   // Login function - called after successful login
   const login = (authData) => {
-    setAuthenticated(true);
-    setUser(authData.user);
-    // Check staff status after login
-    setIsStaff(isCurrentUserStaff());
+    try {
+      console.log('[AuthContext] Login function called with:', authData?.user?.name);
+      
+      // Ensure user data has a name field with fallback logic
+      const userData = authData.user;
+      if (userData && !userData.name) {
+        userData.name = userData.username || userData.email?.split('@')[0] || 'User';
+        console.log('[AuthContext] Applied fallback name during login:', userData.name);
+      }
+      
+      setAuthenticated(true);
+      setUser(userData);
+      // Check staff status after login
+      setIsStaff(isCurrentUserStaff());
+      
+      console.log('[AuthContext] Login completed successfully');
+    } catch (error) {
+      console.error('[AuthContext] Error during login:', error);
+    }
   };
 
   // Logout function
@@ -87,9 +114,23 @@ export const AuthProvider = ({ children }) => {
 
   // Update user data
   const updateUser = (userData) => {
-    setUser(userData);
-    // Update staff status when user data changes
-    setIsStaff(isCurrentUserStaff());
+    try {
+      console.log('[AuthContext] Update user function called with:', userData?.name);
+      
+      // Ensure user data has a name field with fallback logic
+      if (userData && !userData.name) {
+        userData.name = userData.username || userData.email?.split('@')[0] || 'User';
+        console.log('[AuthContext] Applied fallback name during update:', userData.name);
+      }
+      
+      setUser(userData);
+      // Update staff status when user data changes
+      setIsStaff(isCurrentUserStaff());
+      
+      console.log('[AuthContext] User update completed successfully');
+    } catch (error) {
+      console.error('[AuthContext] Error during user update:', error);
+    }
   };
 
   const value = {

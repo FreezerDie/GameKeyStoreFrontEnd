@@ -219,6 +219,65 @@ export const getUserProfile = async () => {
   return await apiGet('/user/profile');
 };
 
+/**
+ * Update user profile
+ * @param {object} profileData - Profile data to update
+ * @param {string} profileData.email - New email (optional)
+ * @param {string} profileData.name - New name (optional)
+ * @param {string} profileData.username - New username (optional)
+ * @returns {Promise<object>} Updated profile data
+ */
+export const updateUserProfile = async (profileData) => {
+  console.log('[API] Updating user profile:', profileData);
+  
+  try {
+    const result = await apiPut('/auth/profile', profileData);
+    console.log('[API] Successfully updated user profile:', result);
+    return result;
+  } catch (error) {
+    console.error('[API] Error updating user profile:', error);
+    throw error;
+  }
+};
+
+/**
+ * Change user password
+ * @param {object} passwordData - Password change data
+ * @param {string} passwordData.current_password - Current password
+ * @param {string} passwordData.new_password - New password
+ * @param {string} passwordData.confirm_password - Confirm new password
+ * @returns {Promise<object>} Password change result
+ */
+export const changeUserPassword = async (passwordData) => {
+  console.log('[API] Changing user password');
+  
+  try {
+    const result = await apiPost('/auth/change-password', passwordData);
+    console.log('[API] Successfully changed user password');
+    return result;
+  } catch (error) {
+    console.error('[API] Error changing user password:', error);
+    throw error;
+  }
+};
+
+/**
+ * Delete user account
+ * @returns {Promise<object>} Account deletion result
+ */
+export const deleteUserAccount = async () => {
+  console.log('[API] Deleting user account');
+  
+  try {
+    const result = await apiDelete('/auth/account');
+    console.log('[API] Successfully deleted user account');
+    return result;
+  } catch (error) {
+    console.error('[API] Error deleting user account:', error);
+    throw error;
+  }
+};
+
 // Game-related API functions
 
 /**
@@ -226,6 +285,7 @@ export const getUserProfile = async () => {
  * @param {object} options - Query options
  * @param {number} options.categoryId - Filter by category ID (optional)
  * @param {boolean} options.includeCategory - Include category details (optional)
+ * @param {boolean} options.includeGameKeys - Include game keys with prices (optional)
  * @returns {Promise<object>} Games data with count and array
  */
 export const fetchGames = async (options = {}) => {
@@ -237,6 +297,10 @@ export const fetchGames = async (options = {}) => {
   
   if (options.includeCategory) {
     params.append('includeCategory', 'true');
+  }
+  
+  if (options.includeGameKeys) {
+    params.append('includeGameKeys', 'true');
   }
   
   const queryString = params.toString();

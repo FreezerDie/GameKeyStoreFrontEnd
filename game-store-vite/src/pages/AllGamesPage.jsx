@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { fetchGames, apiGet } from '../utils/apiUtils';
+import { getBestGamePrice } from '../utils/priceUtils';
 
 const AllGamesPage = () => {
   const [games, setGames] = useState([]);
@@ -62,14 +63,14 @@ const AllGamesPage = () => {
         if (selectedCategoryId) {
           // Load games for specific category with fallback
           try {
-            response = await fetchGames({ categoryId: selectedCategoryId, includeCategory: true });
+            response = await fetchGames({ categoryId: selectedCategoryId, includeCategory: true, includeGameKeys: true });
           } catch (categoryErr) {
             console.warn('Failed to fetch games with category details, trying without:', categoryErr);
-            response = await fetchGames({ categoryId: selectedCategoryId });
+            response = await fetchGames({ categoryId: selectedCategoryId, includeGameKeys: true });
           }
         } else {
           // Load all games
-          response = await fetchGames();
+          response = await fetchGames({ includeGameKeys: true });
         }
         
         setGames(response.data || []);
@@ -234,6 +235,7 @@ const AllGamesPage = () => {
               
               const gameName = game.name || `Game ${game.id}`;
               const gameDescription = game.description || 'No description available';
+              const priceInfo = getBestGamePrice(game);
               
               return (
                 <div key={game.id} className="bg-white rounded-2xl overflow-hidden shadow-lg transition-all duration-300 flex flex-col hover:-translate-y-1 hover:shadow-xl">
@@ -264,8 +266,18 @@ const AllGamesPage = () => {
                         <p className="text-gray-600 text-sm leading-relaxed overflow-hidden text-ellipsis" style={{display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical'}}>{gameDescription}</p>
                       </div>
                       <div className="flex items-center gap-2.5 mt-auto">
-                        <span className="text-2xl font-bold text-green-600">$19.99</span>
-                        <span className="text-base text-gray-500 line-through">$39.99</span>
+                        {priceInfo.hasKeys ? (
+                          <>
+                            <span className="text-2xl font-bold text-green-600">{priceInfo.displayPrice}</span>
+                            {priceInfo.keyType && (
+                              <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded font-medium">
+                                {priceInfo.keyType}
+                              </span>
+                            )}
+                          </>
+                        ) : (
+                          <span className="text-lg font-medium text-orange-600">No keys available</span>
+                        )}
                       </div>
                     </div>
                   </Link>

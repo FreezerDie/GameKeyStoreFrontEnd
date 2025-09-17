@@ -14,11 +14,13 @@ const StaffGameKeysPage = () => {
   const [formData, setFormData] = useState({
     game_id: '',
     key: '',
-    price: ''
+    price: '',
+    key_type: ''
   });
   const [bulkKeys, setBulkKeys] = useState('');
   const [bulkPrice, setBulkPrice] = useState('');
   const [selectedGameId, setSelectedGameId] = useState('');
+  const [bulkKeyType, setBulkKeyType] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [filters, setFilters] = useState({
@@ -92,7 +94,8 @@ const StaffGameKeysPage = () => {
       const keyData = {
         game_id: gameId,
         key: formData.key.trim(),
-        price: price
+        price: price,
+        key_type: formData.key_type.trim() || null
       };
 
       console.log('Submitting key data:', keyData); // Debug log
@@ -141,7 +144,8 @@ const StaffGameKeysPage = () => {
         .map(key => ({
           game_id: gameId,
           key: key,
-          price: price
+          price: price,
+          key_type: bulkKeyType.trim() || null
         }));
 
       if (keys.length === 0) {
@@ -156,6 +160,7 @@ const StaffGameKeysPage = () => {
       setBulkKeys('');
       setBulkPrice('');
       setSelectedGameId('');
+      setBulkKeyType('');
       setShowBulkAdd(false);
     } catch (error) {
       console.error('Error adding bulk keys:', error);
@@ -168,7 +173,8 @@ const StaffGameKeysPage = () => {
     setFormData({
       game_id: key.game_id.toString(),
       key: key.key,
-      price: key.price ? key.price.toString() : ''
+      price: key.price ? key.price.toString() : '',
+      key_type: key.key_type || ''
     });
     setShowAddForm(true);
   };
@@ -189,7 +195,8 @@ const StaffGameKeysPage = () => {
     setFormData({
       game_id: '',
       key: '',
-      price: ''
+      price: '',
+      key_type: ''
     });
     setEditingKey(null);
     setShowAddForm(false);
@@ -298,6 +305,30 @@ const StaffGameKeysPage = () => {
                 />
               </div>
               
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Key Type
+                </label>
+                <select
+                  value={bulkKeyType}
+                  onChange={(e) => setBulkKeyType(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                >
+                  <option value="">Select Key Type</option>
+                  <option value="steam">Steam</option>
+                  <option value="epic">Epic Games</option>
+                  <option value="origin">Origin</option>
+                  <option value="uplay">Uplay</option>
+                  <option value="battle.net">Battle.net</option>
+                  <option value="gog">GOG</option>
+                  <option value="microsoft">Microsoft Store</option>
+                  <option value="playstation">PlayStation</option>
+                  <option value="xbox">Xbox</option>
+                  <option value="nintendo">Nintendo</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              
               <div className="flex justify-end space-x-3">
                 <button
                   type="button"
@@ -306,6 +337,7 @@ const StaffGameKeysPage = () => {
                     setBulkKeys('');
                     setBulkPrice('');
                     setSelectedGameId('');
+                    setBulkKeyType('');
                   }}
                   className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
                 >
@@ -376,6 +408,30 @@ const StaffGameKeysPage = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="19.99"
                 />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Key Type
+                </label>
+                <select
+                  value={formData.key_type}
+                  onChange={(e) => setFormData({...formData, key_type: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">Select Key Type</option>
+                  <option value="steam">Steam</option>
+                  <option value="epic">Epic Games</option>
+                  <option value="origin">Origin</option>
+                  <option value="uplay">Uplay</option>
+                  <option value="battle.net">Battle.net</option>
+                  <option value="gog">GOG</option>
+                  <option value="microsoft">Microsoft Store</option>
+                  <option value="playstation">PlayStation</option>
+                  <option value="xbox">Xbox</option>
+                  <option value="nintendo">Nintendo</option>
+                  <option value="other">Other</option>
+                </select>
               </div>
               
               <div className="md:col-span-2 flex justify-end space-x-3">
@@ -467,6 +523,9 @@ const StaffGameKeysPage = () => {
                         Key
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Key Type
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Price
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -491,6 +550,17 @@ const StaffGameKeysPage = () => {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm font-mono text-gray-900 bg-gray-100 px-2 py-1 rounded">
                             {key.key}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">
+                            {key.key_type ? (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                {key.key_type.charAt(0).toUpperCase() + key.key_type.slice(1)}
+                              </span>
+                            ) : (
+                              <span className="text-gray-400">Not specified</span>
+                            )}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">

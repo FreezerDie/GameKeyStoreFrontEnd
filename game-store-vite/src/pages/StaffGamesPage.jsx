@@ -58,12 +58,22 @@ const StaffGamesPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      // Properly handle category_id - don't convert empty string to NaN
+      const categoryId = formData.category_id && formData.category_id !== '' 
+        ? parseInt(formData.category_id) 
+        : null;
+      
       const gameData = {
         ...formData,
-        category_id: parseInt(formData.category_id)
+        category_id: categoryId
       };
 
+      // For edit operations, only include category_id if it's actually changing or has a value
       if (editingGame) {
+        // If we're editing and category_id is null/empty, preserve the existing category
+        if (!categoryId && editingGame.category_id) {
+          gameData.category_id = editingGame.category_id;
+        }
         await apiPut(`admin/games/${editingGame.id}`, gameData);
       } else {
         await apiPost('admin/games', gameData);
@@ -79,10 +89,19 @@ const StaffGamesPage = () => {
 
   const handleEdit = (game) => {
     setEditingGame(game);
+    
+    // Properly extract category_id - check both possible locations
+    let categoryId = '';
+    if (game.category_id) {
+      categoryId = game.category_id.toString();
+    } else if (game.category?.id) {
+      categoryId = game.category.id.toString();
+    }
+    
     setFormData({
       name: game.name,
       description: game.description || '',
-      category_id: (game.category_id || game.category?.id) ? (game.category_id || game.category?.id).toString() : '',
+      category_id: categoryId,
       cover: game.cover || ''
     });
     setShowAddForm(true);

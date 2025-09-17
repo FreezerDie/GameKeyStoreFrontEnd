@@ -1,25 +1,36 @@
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
-import CartDropdown from './CartDropdown';
 
 const Header = () => {
   const { authenticated, user, isStaff, logout, loading } = useAuth();
   const { cartCount } = useCart();
-  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
 
   const handleLogout = async () => {
     await logout();
+    setIsDropdownOpen(false);
   };
 
-  const toggleCart = () => {
-    setIsCartOpen(!isCartOpen);
+  const toggleDropdown = () => {
+    setIsDropdownOpen(!isDropdownOpen);
   };
 
-  const closeCart = () => {
-    setIsCartOpen(false);
-  };
+  // Handle clicks outside dropdown to close it
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // Show loading state while auth is initializing
   if (loading) {
@@ -60,26 +71,93 @@ const Header = () => {
             </Link>
           )}
         </nav>
-        
-        {/* Cart Button */}
-        {authenticated && (
-          <div className="relative">
-            <button
-              onClick={toggleCart}
-              className="relative text-white p-2 rounded-md transition-all duration-300 hover:bg-white/10 hover:-translate-y-0.5"
+
+
+        <div className="flex gap-4 items-center max-md:gap-2.5">
+          {authenticated ? (
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={toggleDropdown}
+                className="flex items-center gap-2 text-white font-medium text-sm px-4 py-2 rounded-md transition-all duration-300 hover:bg-white/10 hover:-translate-y-0.5 cursor-pointer"
+              >
+                <span className="whitespace-nowrap">
+                  {user?.name || user?.username || user?.email?.split('@')[0] || 'User'}
+                  {isStaff && (
+                    <span className="inline-flex items-center px-2 py-1 ml-2 text-xs font-medium bg-green-100 text-green-800 rounded-full">
+                      Staff
+                    </span>
+                  )}
+                </span>
+                <svg
+                  className={`w-4 h-4 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {/* Dropdown Menu */}
+              {isDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-2 z-50 border border-gray-200">
+                  <Link
+                    to="/profile"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors duration-200"
+                    onClick={() => setIsDropdownOpen(false)}
+                  >
+                    <svg className="inline-block w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    Profile
+                  </Link>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full text-left block px-4 py-2 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors duration-200"
+                  >
+                    <svg className="inline-block w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    Logout
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="flex gap-4 items-center max-md:gap-2.5">
+              <Link
+                to="/login"
+                className="text-white border-2 border-white bg-transparent px-5 py-2.5 rounded-md no-underline font-medium text-sm transition-all duration-300 border-transparent text-center min-w-[80px] hover:bg-white hover:text-indigo-500 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20 max-md:px-4 max-md:py-2 max-md:text-xs max-md:min-w-[70px]"
+              >
+                Login
+              </Link>
+              <Link
+                to="/register"
+                className="bg-white text-indigo-500 border-2 border-white px-5 py-2.5 rounded-md no-underline font-medium text-sm transition-all duration-300 text-center min-w-[80px] hover:bg-transparent hover:text-white hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20 max-md:px-4 max-md:py-2 max-md:text-xs max-md:min-w-[70px]"
+              >
+                Register
+              </Link>
+            </div>
+          )}
+
+          {/* Cart Button */}
+          {authenticated && (
+            <Link
+              to="/cart"
+              className="relative text-white p-2 rounded-md transition-all duration-300 hover:bg-white/10 hover:-translate-y-0.5 mr-4"
               title="Shopping Cart"
             >
-              <svg 
-                className="w-6 h-6" 
-                fill="none" 
-                stroke="currentColor" 
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
                 viewBox="0 0 24 24"
               >
-                <path 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round" 
-                  strokeWidth={2} 
-                  d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-1.1 5M7 13l-1.1 5m0 0H17M7 18a2 2 0 11-4 0 2 2 0 014 0zM21 18a2 2 0 11-4 0 2 2 0 014 0z" 
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-1.1 5M7 13l-1.1 5m0 0H17M7 18a2 2 0 11-4 0 2 2 0 014 0zM21 18a2 2 0 11-4 0 2 2 0 014 0z"
                 />
               </svg>
               {cartCount > 0 && (
@@ -87,46 +165,10 @@ const Header = () => {
                   {cartCount > 99 ? '99+' : cartCount}
                 </span>
               )}
-            </button>
-            
-            <CartDropdown isOpen={isCartOpen} onClose={closeCart} />
-          </div>
-        )}
-        <div className="flex gap-4 items-center max-md:gap-2.5">
-          {authenticated ? (
-            <div className="flex items-center gap-4 max-md:gap-2.5">
-              <span className="text-white font-medium text-sm opacity-90 whitespace-nowrap max-md:hidden">
-                Welcome, {user?.name}!
-                {isStaff && (
-                  <span className="inline-flex items-center px-2 py-1 ml-2 text-xs font-medium bg-green-100 text-green-800 rounded-full">
-                    Staff
-                  </span>
-                )}
-              </span>
-              <button 
-                onClick={handleLogout} 
-                className="text-white border-2 border-white bg-transparent px-5 py-2.5 rounded-md no-underline font-medium text-sm transition-all duration-300 border-transparent text-center min-w-[80px] cursor-pointer hover:bg-white hover:text-indigo-500 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20 max-md:px-4 max-md:py-2 max-md:text-xs max-md:min-w-[70px]"
-              >
-                Logout
-              </button>
-            </div>
-          ) : (
-            <div className="flex gap-4 items-center max-md:gap-2.5">
-              <Link 
-                to="/login" 
-                className="text-white border-2 border-white bg-transparent px-5 py-2.5 rounded-md no-underline font-medium text-sm transition-all duration-300 border-transparent text-center min-w-[80px] hover:bg-white hover:text-indigo-500 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20 max-md:px-4 max-md:py-2 max-md:text-xs max-md:min-w-[70px]"
-              >
-                Login
-              </Link>
-              <Link 
-                to="/register" 
-                className="bg-white text-indigo-500 border-2 border-white px-5 py-2.5 rounded-md no-underline font-medium text-sm transition-all duration-300 text-center min-w-[80px] hover:bg-transparent hover:text-white hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20 max-md:px-4 max-md:py-2 max-md:text-xs max-md:min-w-[70px]"
-              >
-                Register
-              </Link>
-            </div>
+            </Link>
           )}
         </div>
+
       </div>
     </header>
   );

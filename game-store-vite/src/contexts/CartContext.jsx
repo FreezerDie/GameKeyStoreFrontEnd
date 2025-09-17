@@ -10,6 +10,7 @@ import {
   fetchCartCount 
 } from '../utils/apiUtils';
 import { useAuth } from './AuthContext';
+import { calculateCartTotal } from '../utils/moneyUtils';
 
 const CartContext = createContext({
   cartItems: [],
@@ -40,11 +41,7 @@ export const CartProvider = ({ children }) => {
 
   // Calculate derived state
   const cartCount = cartItems.reduce((total, item) => total + (item.quantity || 1), 0);
-  const cartTotal = cartItems.reduce((total, item) => {
-    const price = item.game_key?.price || item.price || 0;
-    const quantity = item.quantity || 1;
-    return total + (price * quantity);
-  }, 0);
+  const cartTotal = calculateCartTotal(cartItems);
 
   // Fetch cart data when user is authenticated
   useEffect(() => {
@@ -89,7 +86,27 @@ export const CartProvider = ({ children }) => {
       
       const response = await addGameKeyToCart(gameKeyId, quantity);
       
-      // Refresh cart after adding item
+      // The new API response includes the cart item data with game and game_key info
+      if (response?.data) {
+        const newItem = response.data;
+        
+        // Update cart items immediately for better UX
+        // Check if item already exists (in case of quantity update)
+        setCartItems(prev => {
+          const existingIndex = prev.findIndex(item => item.id === newItem.id);
+          if (existingIndex >= 0) {
+            // Update existing item
+            const updated = [...prev];
+            updated[existingIndex] = newItem;
+            return updated;
+          } else {
+            // Add new item
+            return [...prev, newItem];
+          }
+        });
+      }
+      
+      // Still refresh cart to ensure consistency
       await fetchCart();
       return true;
     } catch (err) {

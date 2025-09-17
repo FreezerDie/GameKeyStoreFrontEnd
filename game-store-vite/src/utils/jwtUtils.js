@@ -60,10 +60,13 @@ export const getUserFromToken = (token) => {
     return null;
   }
 
+  // Create display name with fallbacks - prefer name, then username, then email
+  const displayName = payload.name || payload.username || payload.email?.split('@')[0] || 'User';
+
   return {
     id: payload.nameid,
     email: payload.email,
-    name: payload.name,
+    name: displayName, // Use fallback logic for display name
     username: payload.username,
     isStaff: payload.is_staff === 'true' || payload.is_staff === true,
     role: payload.role,

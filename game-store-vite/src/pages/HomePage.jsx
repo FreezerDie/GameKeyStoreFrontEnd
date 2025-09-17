@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import CategoriesSection from '../components/CategoriesSection';
 import { fetchGames } from '../utils/apiUtils';
+import { getBestGamePrice } from '../utils/priceUtils';
 
 const HomePage = () => {
   const [games, setGames] = useState([]);
@@ -12,7 +13,7 @@ const HomePage = () => {
     const loadGames = async () => {
       try {
         setLoading(true);
-        const response = await fetchGames();
+        const response = await fetchGames({ includeGameKeys: true });
         // Take first 6 games for featured section
         setGames(response.data?.slice(0, 6) || []);
         setError(null);
@@ -80,6 +81,7 @@ const HomePage = () => {
                   
                   const gameName = game.name || `Game ${game.id}`;
                   const gameDescription = game.description || 'No description available';
+                  const priceInfo = getBestGamePrice(game);
                   
                   return (
                     <div key={game.id} className="bg-white rounded-2xl overflow-hidden shadow-lg transition-all duration-300 flex flex-col hover:-translate-y-1 hover:shadow-xl">
@@ -110,8 +112,18 @@ const HomePage = () => {
                             <p className="text-gray-600 text-sm leading-relaxed overflow-hidden text-ellipsis" style={{display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical'}}>{gameDescription}</p>
                           </div>
                           <div className="flex items-center gap-2.5 mb-4">
-                            <span className="text-2xl font-bold text-green-600">$19.99</span>
-                            <span className="text-base text-gray-500 line-through">$39.99</span>
+                            {priceInfo.hasKeys ? (
+                              <>
+                                <span className="text-2xl font-bold text-green-600">{priceInfo.displayPrice}</span>
+                                {priceInfo.keyType && (
+                                  <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded font-medium">
+                                    {priceInfo.keyType}
+                                  </span>
+                                )}
+                              </>
+                            ) : (
+                              <span className="text-lg font-medium text-orange-600">No keys available</span>
+                            )}
                           </div>
                         </div>
                       </Link>
