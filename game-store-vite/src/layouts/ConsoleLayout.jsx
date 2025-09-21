@@ -41,21 +41,6 @@ const ConsoleLayout = () => {
       name: 'Categories',
       path: '/staff/categories',
       icon: '📂'
-    },
-    {
-      name: 'Users',
-      path: '/staff/users',
-      icon: '👥'
-    },
-    {
-      name: 'Orders',
-      path: '/staff/orders',
-      icon: '📋'
-    },
-    {
-      name: 'Settings',
-      path: '/staff/settings',
-      icon: '⚙️'
     }
   ];
 

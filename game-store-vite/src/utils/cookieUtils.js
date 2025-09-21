@@ -87,17 +87,52 @@ export const removeCookie = (name, path = '/') => {
  */
 export const setAuthCookies = (authData) => {
   const { token, refreshToken, user, expiresAt } = authData;
-  
+
+  if (!token) {
+    console.error('[Auth] ERROR: No token provided to setAuthCookies!');
+    return;
+  }
+
+  if (!user) {
+    console.error('[Auth] ERROR: No user data provided to setAuthCookies!');
+    return;
+  }
+
+  if (!expiresAt) {
+    console.error('[Auth] ERROR: No expiresAt provided to setAuthCookies!');
+    return;
+  }
+
   // Calculate expiration date from API response
   const expirationDate = new Date(expiresAt);
-  
-  // Set cookies with the actual expiration time from API
-  setCookie('authToken', token, expirationDate, { secure: true, sameSite: 'strict' });
-  setCookie('refreshToken', refreshToken, expirationDate, { secure: true, sameSite: 'strict' });
-  setCookie('user', JSON.stringify(user), expirationDate, { secure: true, sameSite: 'strict' });
-  setCookie('expiresAt', expiresAt, expirationDate, { secure: true, sameSite: 'strict' });
-  
-  console.log('Authentication cookies set successfully');
+
+  if (isNaN(expirationDate.getTime())) {
+    console.error('[Auth] ERROR: Invalid expiresAt date:', expiresAt);
+    return;
+  }
+
+  // Determine cookie security settings based on environment
+  const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  const isHTTPS = window.location.protocol === 'https:';
+  const isDevelopment = import.meta.env.MODE === 'development';
+
+  // Use secure cookies only in production or HTTPS environments
+  const cookieOptions = {
+    secure: !isDevelopment && (isHTTPS || !isLocalhost),
+    sameSite: isDevelopment ? 'lax' : 'strict'
+  };
+
+  try {
+    // Set cookies with the actual expiration time from API
+    setCookie('authToken', token, expirationDate, cookieOptions);
+    setCookie('refreshToken', refreshToken, expirationDate, cookieOptions);
+    setCookie('user', JSON.stringify(user), expirationDate, cookieOptions);
+    setCookie('expiresAt', expiresAt, expirationDate, cookieOptions);
+
+    console.log('[Auth] Authentication cookies set successfully');
+  } catch (error) {
+    console.error('[Auth] ERROR setting authentication cookies:', error);
+  }
 };
 
 /**
@@ -109,11 +144,11 @@ export const getAuthCookies = () => {
   const refreshToken = getCookie('refreshToken');
   const userStr = getCookie('user');
   const expiresAt = getCookie('expiresAt');
-  
+
   if (!token || !refreshToken || !userStr || !expiresAt) {
     return null;
   }
-  
+
   try {
     const user = JSON.parse(userStr);
     return {
@@ -123,7 +158,7 @@ export const getAuthCookies = () => {
       expiresAt
     };
   } catch (error) {
-    console.error('Error parsing user data from cookies:', error);
+    console.error('[Auth] Error parsing user data from cookies:', error);
     return null;
   }
 };
@@ -169,25 +204,43 @@ export const isAuthenticated = () => {
  */
 export const getCurrentUser = () => {
   try {
+    console.log('[Auth] getCurrentUser called');
+    
     const authData = getAuthCookies();
     if (!authData) {
       console.log('[Auth] No auth data found in cookies');
       return null;
     }
+    
+    console.log('[Auth] Auth data retrieved from cookies:', {
+      hasToken: !!authData.token,
+      hasRefreshToken: !!authData.refreshToken,
+      hasUser: !!authData.user,
+      hasExpiresAt: !!authData.expiresAt,
+      userFields: authData.user ? Object.keys(authData.user) : []
+    });
 
     let userData = null;
 
     // If we have token, decode it for the most up-to-date user info
     if (authData.token) {
-      const userFromToken = getUserFromToken(authData.token);
-      if (userFromToken && userFromToken.name) {
-        console.log('[Auth] Successfully retrieved user from token:', userFromToken.name);
-        userData = userFromToken;
+      try {
+        const userFromToken = getUserFromToken(authData.token);
+        console.log('[Auth] User data from JWT token:', userFromToken);
+        
+        if (userFromToken) {
+          userData = userFromToken;
+          console.log('[Auth] Successfully retrieved user from token:', userFromToken.name);
+        }
+      } catch (tokenError) {
+        console.error('[Auth] Error decoding JWT token:', tokenError);
       }
     }
 
-    // Fallback to stored user data if token parsing failed or didn't have name
+    // Fallback to stored user data if token parsing failed
     if (!userData && authData.user) {
+      console.log('[Auth] Falling back to stored user data:', authData.user);
+      
       // Apply same fallback logic to stored user data
       const storedUser = authData.user;
       const displayName = storedUser.name || storedUser.username || storedUser.email?.split('@')[0] || 'User';
@@ -200,7 +253,7 @@ export const getCurrentUser = () => {
     }
 
     if (!userData) {
-      console.warn('[Auth] No valid user data found');
+      console.warn('[Auth] No valid user data found anywhere');
       return null;
     }
 
@@ -210,6 +263,7 @@ export const getCurrentUser = () => {
       console.log('[Auth] Applied final fallback name:', userData.name);
     }
 
+    console.log('[Auth] Final user data being returned:', userData);
     return userData;
   } catch (error) {
     console.error('[Auth] Error getting current user:', error);

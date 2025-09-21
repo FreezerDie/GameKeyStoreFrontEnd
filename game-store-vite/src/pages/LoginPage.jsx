@@ -86,6 +86,20 @@ const LoginPage = () => {
         setMessage(error.message || 'Login failed. Please try again.');
       }
       console.error('Login error:', error);
+
+      // Clear the form and reset state after login failure for better UX
+      setTimeout(() => {
+        setFormData({
+          email: '',
+          password: ''
+        });
+        setRememberMe(false);
+        setErrors({});
+        // Keep the error message visible for a moment before clearing
+        setTimeout(() => {
+          setMessage('');
+        }, 3000);
+      }, 2000);
     } finally {
       setIsLoading(false);
     }
@@ -174,6 +188,7 @@ const LoginPage = () => {
         <div className="text-center pt-5 border-t border-gray-300 mt-5">
           <p className="m-0 text-gray-600 text-sm">Don't have an account? <Link to="/register" className="text-indigo-500 no-underline font-semibold hover:underline">Sign up</Link></p>
         </div>
+
       </div>
     </div>
   );
