@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { 
-  fetchUserOrders, 
-  fetchOrderById, 
-  updateUserProfile, 
-  changeUserPassword, 
-  deleteUserAccount 
+import {
+  fetchUserOrders,
+  fetchOrderById,
+  updateUserProfile,
+  changeUserPassword,
+  deleteUserAccount
 } from '../utils/apiUtils';
 import { formatPrice } from '../utils/moneyUtils';
+import { setAuthCookies, getAuthCookies } from '../utils/cookieUtils';
+import { runAuthDiagnostics } from '../utils/debugAuth';
 
 const ProfilePage = () => {
   const { user, updateUser, logout } = useAuth();
@@ -129,15 +131,29 @@ const ProfilePage = () => {
       }
 
       const result = await updateUserProfile(updateData);
-      
-      // Update the user context with new data
-      if (result.data) {
-        updateUser(result.data);
+
+      // Handle different response formats - some APIs return data directly, others wrap it
+      const updatedUserData = result.data || result;
+
+      if (updatedUserData) {
+        // Update the user context with new data
+        updateUser(updatedUserData);
+
+        // Also update the cookies to persist the changes
+        const currentAuthData = getAuthCookies();
+        if (currentAuthData) {
+          const updatedAuthData = {
+            ...currentAuthData,
+            user: updatedUserData
+          };
+          setAuthCookies(updatedAuthData);
+          console.log('[Profile] Updated user data in cookies:', updatedUserData);
+        }
       }
 
       setProfileSuccess('Profile updated successfully!');
       setEditingProfile(false);
-      
+
       // Clear success message after 3 seconds
       setTimeout(() => setProfileSuccess(null), 3000);
     } catch (err) {
@@ -402,20 +418,40 @@ const ProfilePage = () => {
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-800">My Profile</h1>
-              {user && (
-                <p className="text-gray-600 mt-2">
-                  Welcome back, {user.name || user.username || user.email?.split('@')[0] || 'User'}!
-                </p>
-              )}
+              <div>
+                <h1 className="text-3xl font-bold text-gray-800">My Profile</h1>
+                {user && (
+                  <p className="text-gray-600 mt-2">
+                    Welcome back, {user.name || user.username || user.email?.split('@')[0] || 'User'}!
+                  </p>
+                )}
+                {!user && (
+                  <div className="mt-2 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p className="text-yellow-800 text-sm">⚠️ User data is not loading properly.</p>
+                    <button
+                      onClick={runAuthDiagnostics}
+                      className="mt-2 text-xs bg-yellow-600 text-white px-3 py-1 rounded hover:bg-yellow-700"
+                    >
+                      Debug Authentication
+                    </button>
+                  </div>
+                )}
+              </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={runAuthDiagnostics}
+                className="text-xs bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-700"
+                title="Debug authentication state"
+              >
+                Debug Auth
+              </button>
+              <Link 
+                to="/games" 
+                className="text-indigo-600 hover:text-indigo-800 font-medium transition-colors"
+              >
+                Continue Shopping
+              </Link>
             </div>
-            <Link 
-              to="/games" 
-              className="text-indigo-600 hover:text-indigo-800 font-medium transition-colors"
-            >
-              Continue Shopping
-            </Link>
           </div>
         </div>
 
@@ -554,23 +590,70 @@ const ProfilePage = () => {
                     </div>
                   </form>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-600 mb-1">Name</label>
-                      <p className="text-gray-800 text-lg">{user?.name || 'Not provided'}</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-600 mb-1">Username</label>
-                      <p className="text-gray-800 text-lg">{user?.username || 'Not provided'}</p>
-                    </div>
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-600 mb-1">Email Address</label>
-                      <p className="text-gray-800 text-lg">{user?.email || 'Not provided'}</p>
-                    </div>
-                    {user?.role && (
+                  <div className="space-y-6">
+                    {/* User Data Display */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
-                        <label className="block text-sm font-medium text-gray-600 mb-1">Role</label>
-                        <p className="text-gray-800 text-lg capitalize">{user.role}</p>
+                        <label className="block text-sm font-medium text-gray-600 mb-1">Name</label>
+                        <p className="text-gray-800 text-lg">{user?.name || 'Not provided'}</p>
+                        {!user?.name && user && (
+                          <p className="text-xs text-red-600">⚠️ Name field is missing</p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-600 mb-1">Username</label>
+                        <p className="text-gray-800 text-lg">{user?.username || 'Not provided'}</p>
+                        {!user?.username && user && (
+                          <p className="text-xs text-yellow-600">⚠️ Username field is missing</p>
+                        )}
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-600 mb-1">Email Address</label>
+                        <p className="text-gray-800 text-lg">{user?.email || 'Not provided'}</p>
+                        {!user?.email && user && (
+                          <p className="text-xs text-red-600">⚠️ Email field is missing</p>
+                        )}
+                      </div>
+                      {user?.role && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-600 mb-1">Role</label>
+                          <p className="text-gray-800 text-lg capitalize">{user.role}</p>
+                        </div>
+                      )}
+                      {user?.id && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-600 mb-1">User ID</label>
+                          <p className="text-gray-800 text-sm font-mono">{user.id}</p>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Debug Information */}
+                    {user && (
+                      <div className="mt-6 p-4 bg-gray-50 rounded-lg border">
+                        <details className="text-xs">
+                          <summary className="font-medium text-gray-700 cursor-pointer mb-2">
+                            🔍 Debug: Raw User Data
+                          </summary>
+                          <pre className="text-gray-600 whitespace-pre-wrap overflow-x-auto">
+                            {JSON.stringify(user, null, 2)}
+                          </pre>
+                        </details>
+                      </div>
+                    )}
+                    
+                    {!user && (
+                      <div className="p-6 bg-red-50 border border-red-200 rounded-lg">
+                        <h3 className="font-medium text-red-800 mb-2">❌ No User Data Found</h3>
+                        <p className="text-sm text-red-700 mb-4">
+                          The user object is null or undefined. This suggests an issue with authentication data retrieval.
+                        </p>
+                        <button
+                          onClick={runAuthDiagnostics}
+                          className="bg-red-600 text-white px-4 py-2 rounded text-sm hover:bg-red-700"
+                        >
+                          Run Full Diagnostics
+                        </button>
                       </div>
                     )}
                   </div>

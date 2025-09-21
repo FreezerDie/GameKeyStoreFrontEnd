@@ -28,23 +28,26 @@ const createHeaders = (additionalHeaders = {}) => {
 /**
  * Handle API response and check for authentication errors
  * @param {Response} response - Fetch response object
+ * @param {boolean} isLoginRequest - Whether this is a login request (don't auto-redirect)
  * @returns {Promise<any>} Parsed response data
  */
-const handleResponse = async (response) => {
+const handleResponse = async (response, isLoginRequest = false) => {
   // If unauthorized, clear auth cookies
-  if (response.status === 401) {
-    clearAuthCookies();
-    // Optionally redirect to login page
-    window.location.href = '/login';
-    throw new Error('Authentication failed. Please log in again.');
-  }
-  
+  // if (response.status === 401) {
+  //   clearAuthCookies();
+  //   // Only redirect to login page if this isn't already a login request
+  //   if (!isLoginRequest) {
+  //     window.location.href = '/login';
+  //   }
+  //   throw new Error('Authentication failed. Please log in again.');
+  // }
+
   // If response is not ok, throw error
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
   }
-  
+
   return response.json();
 };
 
@@ -52,22 +55,23 @@ const handleResponse = async (response) => {
  * Generic API request function
  * @param {string} endpoint - API endpoint (relative to base URL)
  * @param {object} options - Fetch options
+ * @param {boolean} isLoginRequest - Whether this is a login request
  * @returns {Promise<any>} API response data
  */
-const apiRequest = async (endpoint, options = {}) => {
+const apiRequest = async (endpoint, options = {}, isLoginRequest = false) => {
   // Ensure proper URL construction - remove leading slash from endpoint if present
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
   const url = `${API_BASE_URL}/${cleanEndpoint}`;
   const headers = createHeaders(options.headers);
-  
+
   const config = {
     ...options,
     headers
   };
-  
+
   try {
     const response = await fetch(url, config);
-    return await handleResponse(response);
+    return await handleResponse(response, isLoginRequest);
   } catch (error) {
     console.error(`API request failed: ${endpoint}`, error);
     throw error;
@@ -78,13 +82,14 @@ const apiRequest = async (endpoint, options = {}) => {
  * GET request
  * @param {string} endpoint - API endpoint
  * @param {object} options - Additional fetch options
+ * @param {boolean} isLoginRequest - Whether this is a login request
  * @returns {Promise<any>} API response data
  */
-export const apiGet = (endpoint, options = {}) => {
+export const apiGet = (endpoint, options = {}, isLoginRequest = false) => {
   return apiRequest(endpoint, {
     method: 'GET',
     ...options
-  });
+  }, isLoginRequest);
 };
 
 /**
@@ -92,14 +97,15 @@ export const apiGet = (endpoint, options = {}) => {
  * @param {string} endpoint - API endpoint
  * @param {object} data - Request body data
  * @param {object} options - Additional fetch options
+ * @param {boolean} isLoginRequest - Whether this is a login request
  * @returns {Promise<any>} API response data
  */
-export const apiPost = (endpoint, data = {}, options = {}) => {
+export const apiPost = (endpoint, data = {}, options = {}, isLoginRequest = false) => {
   return apiRequest(endpoint, {
     method: 'POST',
     body: JSON.stringify(data),
     ...options
-  });
+  }, isLoginRequest);
 };
 
 /**
@@ -107,27 +113,29 @@ export const apiPost = (endpoint, data = {}, options = {}) => {
  * @param {string} endpoint - API endpoint
  * @param {object} data - Request body data
  * @param {object} options - Additional fetch options
+ * @param {boolean} isLoginRequest - Whether this is a login request
  * @returns {Promise<any>} API response data
  */
-export const apiPut = (endpoint, data = {}, options = {}) => {
+export const apiPut = (endpoint, data = {}, options = {}, isLoginRequest = false) => {
   return apiRequest(endpoint, {
     method: 'PUT',
     body: JSON.stringify(data),
     ...options
-  });
+  }, isLoginRequest);
 };
 
 /**
  * DELETE request
  * @param {string} endpoint - API endpoint
  * @param {object} options - Additional fetch options
+ * @param {boolean} isLoginRequest - Whether this is a login request
  * @returns {Promise<any>} API response data
  */
-export const apiDelete = (endpoint, options = {}) => {
+export const apiDelete = (endpoint, options = {}, isLoginRequest = false) => {
   return apiRequest(endpoint, {
     method: 'DELETE',
     ...options
-  });
+  }, isLoginRequest);
 };
 
 /**
@@ -135,14 +143,15 @@ export const apiDelete = (endpoint, options = {}) => {
  * @param {string} endpoint - API endpoint
  * @param {object} data - Request body data
  * @param {object} options - Additional fetch options
+ * @param {boolean} isLoginRequest - Whether this is a login request
  * @returns {Promise<any>} API response data
  */
-export const apiPatch = (endpoint, data = {}, options = {}) => {
+export const apiPatch = (endpoint, data = {}, options = {}, isLoginRequest = false) => {
   return apiRequest(endpoint, {
     method: 'PATCH',
     body: JSON.stringify(data),
     ...options
-  });
+  }, isLoginRequest);
 };
 
 // Authentication specific API functions
@@ -153,13 +162,48 @@ export const apiPatch = (endpoint, data = {}, options = {}) => {
  * @returns {Promise<object>} Authentication data
  */
 export const loginUser = async (credentials) => {
-  const response = await apiPost('/auth/login', credentials);
-  
-  // Save authentication data to cookies
-  if (response.token) {
-    setAuthCookies(response);
+  // Use apiPost with login flag to prevent auto-redirect on 401
+  const response = await apiPost('/auth/login', credentials, {}, true); // true = isLoginRequest
+
+  // Handle different possible response structures from backend
+  let authData = response;
+
+  // Check if response has nested data structure
+  if (response.data && typeof response.data === 'object') {
+    authData = response.data;
   }
-  
+
+  // Ensure we have all required fields, with fallbacks
+  if (!authData.token && response.access_token) {
+    authData.token = response.access_token;
+  }
+
+  if (!authData.refreshToken && response.refresh_token) {
+    authData.refreshToken = response.refresh_token;
+  }
+
+  if (!authData.expiresAt && response.expires_at) {
+    authData.expiresAt = response.expires_at;
+  }
+
+  // If no expiresAt provided, create one (24 hours from now)
+  if (!authData.expiresAt) {
+    authData.expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+  }
+
+  // Handle different expiresAt formats
+  if (authData.expiresAt && typeof authData.expiresAt === 'number') {
+    authData.expiresAt = new Date(authData.expiresAt * 1000).toISOString(); // Assume seconds, convert to milliseconds
+  }
+
+  // Save authentication data to cookies
+  if (authData.token) {
+    setAuthCookies(authData);
+  } else {
+    console.error('[API] No token found in login response - cookies will not be set!');
+    console.error('[API] Full response structure:', response);
+  }
+
   return response;
 };
 

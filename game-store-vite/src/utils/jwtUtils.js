@@ -64,11 +64,11 @@ export const getUserFromToken = (token) => {
   const displayName = payload.name || payload.username || payload.email?.split('@')[0] || 'User';
 
   return {
-    id: payload.nameid,
+    id: payload.id, // Changed from 'nameid' to 'id' to match new JWT claims
     email: payload.email,
     name: displayName, // Use fallback logic for display name
     username: payload.username,
-    isStaff: payload.is_staff === 'true' || payload.is_staff === true,
+    isStaff: payload.is_staff === 'true' || payload.is_staff === true, // Handle both string and boolean
     role: payload.role,
     roleId: payload.role_id,
     jti: payload.jti,
