@@ -10,7 +10,6 @@ import {
 } from '../utils/apiUtils';
 import { formatPrice } from '../utils/moneyUtils';
 import { setAuthCookies, getAuthCookies } from '../utils/cookieUtils';
-import { runAuthDiagnostics } from '../utils/debugAuth';
 
 const ProfilePage = () => {
   const { user, updateUser, logout } = useAuth();
@@ -147,7 +146,6 @@ const ProfilePage = () => {
             user: updatedUserData
           };
           setAuthCookies(updatedAuthData);
-          console.log('[Profile] Updated user data in cookies:', updatedUserData);
         }
       }
 
@@ -428,25 +426,12 @@ const ProfilePage = () => {
                 {!user && (
                   <div className="mt-2 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                     <p className="text-yellow-800 text-sm">⚠️ User data is not loading properly.</p>
-                    <button
-                      onClick={runAuthDiagnostics}
-                      className="mt-2 text-xs bg-yellow-600 text-white px-3 py-1 rounded hover:bg-yellow-700"
-                    >
-                      Debug Authentication
-                    </button>
                   </div>
                 )}
               </div>
             <div className="flex items-center gap-2">
-              <button
-                onClick={runAuthDiagnostics}
-                className="text-xs bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-700"
-                title="Debug authentication state"
-              >
-                Debug Auth
-              </button>
-              <Link 
-                to="/games" 
+              <Link
+                to="/games"
                 className="text-indigo-600 hover:text-indigo-800 font-medium transition-colors"
               >
                 Continue Shopping
@@ -620,27 +605,8 @@ const ProfilePage = () => {
                           <p className="text-gray-800 text-lg capitalize">{user.role}</p>
                         </div>
                       )}
-                      {user?.id && (
-                        <div>
-                          <label className="block text-sm font-medium text-gray-600 mb-1">User ID</label>
-                          <p className="text-gray-800 text-sm font-mono">{user.id}</p>
-                        </div>
-                      )}
                     </div>
                     
-                    {/* Debug Information */}
-                    {user && (
-                      <div className="mt-6 p-4 bg-gray-50 rounded-lg border">
-                        <details className="text-xs">
-                          <summary className="font-medium text-gray-700 cursor-pointer mb-2">
-                            🔍 Debug: Raw User Data
-                          </summary>
-                          <pre className="text-gray-600 whitespace-pre-wrap overflow-x-auto">
-                            {JSON.stringify(user, null, 2)}
-                          </pre>
-                        </details>
-                      </div>
-                    )}
                     
                     {!user && (
                       <div className="p-6 bg-red-50 border border-red-200 rounded-lg">
@@ -648,12 +614,6 @@ const ProfilePage = () => {
                         <p className="text-sm text-red-700 mb-4">
                           The user object is null or undefined. This suggests an issue with authentication data retrieval.
                         </p>
-                        <button
-                          onClick={runAuthDiagnostics}
-                          className="bg-red-600 text-white px-4 py-2 rounded text-sm hover:bg-red-700"
-                        >
-                          Run Full Diagnostics
-                        </button>
                       </div>
                     )}
                   </div>

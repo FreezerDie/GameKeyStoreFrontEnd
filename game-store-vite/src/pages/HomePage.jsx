@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import CategoriesSection from '../components/CategoriesSection';
 import { fetchGames } from '../utils/apiUtils';
 import { getBestGamePrice } from '../utils/priceUtils';
@@ -8,6 +8,7 @@ const HomePage = () => {
   const [games, setGames] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const loadGames = async () => {
@@ -36,13 +37,35 @@ const HomePage = () => {
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-indigo-500 to-purple-600 py-20 px-5 flex items-center justify-between max-w-6xl mx-auto gap-16 max-md:flex-col max-md:text-center max-md:py-12 max-md:gap-10">
         <div className="flex-1 text-white">
-          <h1 className="text-6xl font-bold mb-5 leading-tight max-md:text-5xl max-[480px]:text-4xl">Welcome to GameStore</h1>
-          <p className="text-xl mb-8 opacity-90 max-md:text-lg">Discover the best game keys at unbeatable prices</p>
-          <button className="bg-white text-indigo-500 px-8 py-4 border-none rounded-lg text-lg font-semibold cursor-pointer transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20">Browse Games</button>
+          <h1 className="text-6xl font-bold mb-5 leading-tight max-md:text-5xl max-[480px]:text-4xl">Your Digital Game Key Store</h1>
+          <p className="text-xl mb-8 opacity-90 max-md:text-lg">Instant game key delivery • Best prices guaranteed • Secure digital downloads</p>
+          <Link 
+            to="/games" 
+            className="inline-block bg-white text-indigo-500 px-8 py-4 border-none rounded-lg text-lg font-semibold cursor-pointer transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20 no-underline"
+          >
+            Browse Games
+          </Link>
         </div>
         <div className="flex-1 text-center">
-          <div className="w-full max-w-[600px] h-[400px] bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl shadow-2xl flex items-center justify-center text-white text-2xl font-semibold text-center max-md:h-80">
-            <span>🎮 Gaming Controller</span>
+          <div className="w-full max-w-[600px] h-[400px] bg-white/10 backdrop-blur-sm rounded-2xl shadow-2xl flex flex-col items-center justify-center text-white p-8 max-md:h-80">
+            <div className="grid grid-cols-3 gap-4 mb-6">
+              <div className="flex flex-col items-center p-4 bg-white/10 rounded-lg">
+                <div className="text-3xl mb-2">🔑</div>
+                <span className="text-sm">Instant Keys</span>
+              </div>
+              <div className="flex flex-col items-center p-4 bg-white/10 rounded-lg">
+                <div className="text-3xl mb-2">⚡</div>
+                <span className="text-sm">Fast Delivery</span>
+              </div>
+              <div className="flex flex-col items-center p-4 bg-white/10 rounded-lg">
+                <div className="text-3xl mb-2">🛡️</div>
+                <span className="text-sm">Secure</span>
+              </div>
+            </div>
+            <div className="text-center">
+              <h3 className="text-xl font-semibold mb-2">Digital Game Keys</h3>
+              <p className="text-sm opacity-80">Activate instantly on your favorite platforms</p>
+            </div>
           </div>
         </div>
       </section>
@@ -128,7 +151,12 @@ const HomePage = () => {
                         </div>
                       </Link>
                       <div className="px-5 pb-5">
-                        <button className="w-full py-3 bg-gradient-to-br from-indigo-500 to-purple-600 text-white border-none rounded-lg font-semibold cursor-pointer transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md hover:shadow-indigo-500/30">Add to Cart</button>
+                        <button
+                          onClick={() => navigate(`/game/${game.id}`)}
+                          className="w-full py-3 bg-gradient-to-br from-indigo-500 to-purple-600 text-white border-none rounded-lg font-semibold cursor-pointer transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md hover:shadow-indigo-500/30"
+                        >
+                          Buy
+                        </button>
                       </div>
                     </div>
                   );

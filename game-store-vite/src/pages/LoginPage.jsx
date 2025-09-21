@@ -8,7 +8,6 @@ const LoginPage = () => {
     email: '',
     password: ''
   });
-  const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [errors, setErrors] = useState({});
@@ -93,7 +92,6 @@ const LoginPage = () => {
           email: '',
           password: ''
         });
-        setRememberMe(false);
         setErrors({});
         // Keep the error message visible for a moment before clearing
         setTimeout(() => {
@@ -152,17 +150,7 @@ const LoginPage = () => {
             {errors.password && <span className="block text-red-500 text-xs mt-1 font-medium">{errors.password}</span>}
           </div>
 
-          <div className="flex justify-between items-center mb-6 max-[480px]:flex-col max-[480px]:gap-4 max-[480px]:items-start">
-            <label className="flex items-center text-sm text-gray-600 cursor-pointer select-none">
-              <input 
-                type="checkbox" 
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
-                disabled={isLoading}
-                className="mr-2 w-auto"
-              />
-              Remember me
-            </label>
+          <div className="flex justify-end items-center mb-6">
             <a href="#" className="text-indigo-500 no-underline text-sm font-medium hover:underline">Forgot password?</a>
           </div>
 
