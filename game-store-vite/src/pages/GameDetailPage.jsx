@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { fetchGameById, fetchGamesByCategory } from '../utils/apiUtils';
+import { getBestGamePrice } from '../utils/priceUtils';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -338,16 +339,17 @@ const GameDetailPage = () => {
               <div className="grid grid-cols-[repeat(auto-fit,minmax(250px,1fr))] gap-6 max-md:grid-cols-[repeat(auto-fit,minmax(220px,1fr))] max-md:gap-5 max-[480px]:grid-cols-1 max-[480px]:gap-4">
                 {relatedGames.map(relatedGame => {
                   const relatedGameName = relatedGame.name || `Game ${relatedGame.id}`;
+                  const priceInfo = getBestGamePrice(relatedGame);
                   return (
-                    <Link 
-                      key={relatedGame.id} 
-                      to={`/game/${relatedGame.id}`} 
+                    <Link
+                      key={relatedGame.id}
+                      to={`/game/${relatedGame.id}`}
                       className="no-underline text-inherit bg-gray-50 rounded-2xl overflow-hidden transition-all duration-300 shadow-sm hover:-translate-y-1 hover:shadow-lg"
                     >
                       <div className="relative w-full h-36 overflow-hidden">
                         {relatedGame.cover ? (
-                          <img 
-                            src={`https://s3.tebi.io/game-key-store/games/${relatedGame.cover}`} 
+                          <img
+                            src={`https://s3.tebi.io/game-key-store/games/${relatedGame.cover}`}
                             alt={relatedGameName}
                             className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
                             onError={(e) => {
@@ -359,7 +361,7 @@ const GameDetailPage = () => {
                             }}
                           />
                         ) : (
-                          <div 
+                          <div
                             className="w-full h-36 flex items-center justify-center text-white font-semibold text-center p-4 box-border"
                             style={{
                               background: `linear-gradient(135deg, ${getPlaceholderColor(relatedGame.id)}, #764ba2)`
@@ -372,8 +374,19 @@ const GameDetailPage = () => {
                       <div className="p-4">
                         <h4 className="text-lg font-semibold text-gray-800 mb-2 leading-tight">{relatedGameName}</h4>
                         <p className="text-sm text-gray-600 leading-relaxed mb-3 overflow-hidden text-ellipsis" style={{display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical'}}>{relatedGame.description || 'No description available'}</p>
-                        <div className="flex items-center justify-start">
-                          <span className="text-lg font-bold text-green-600">$19.99</span>
+                        <div className="flex items-center gap-2.5">
+                          {priceInfo.hasKeys ? (
+                            <>
+                              <span className="text-lg font-bold text-green-600">{priceInfo.displayPrice}</span>
+                              {priceInfo.keyType && (
+                                <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded font-medium">
+                                  {priceInfo.keyType}
+                                </span>
+                              )}
+                            </>
+                          ) : (
+                            <span className="text-lg font-medium text-orange-600">No keys available</span>
+                          )}
                         </div>
                       </div>
                     </Link>

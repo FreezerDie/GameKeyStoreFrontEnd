@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { fetchGames, apiGet } from '../utils/apiUtils';
 import { getBestGamePrice } from '../utils/priceUtils';
 
@@ -10,7 +10,8 @@ const AllGamesPage = () => {
   const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchParams, setSearchParams] = useSearchParams();
-  
+  const navigate = useNavigate();
+
   const categoryId = searchParams.get('category');
   const selectedCategoryId = categoryId ? parseInt(categoryId) : null;
 
@@ -282,7 +283,12 @@ const AllGamesPage = () => {
                     </div>
                   </Link>
                   <div className="px-5 pb-5">
-                    <button className="w-full py-3 bg-gradient-to-br from-indigo-500 to-purple-600 text-white border-none rounded-lg font-semibold cursor-pointer transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md hover:shadow-indigo-500/30">Add to Cart</button>
+                    <button
+                      onClick={() => navigate(`/game/${game.id}`)}
+                      className="w-full py-3 bg-gradient-to-br from-indigo-500 to-purple-600 text-white border-none rounded-lg font-semibold cursor-pointer transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md hover:shadow-indigo-500/30"
+                    >
+                      Buy
+                    </button>
                   </div>
                 </div>
               );
