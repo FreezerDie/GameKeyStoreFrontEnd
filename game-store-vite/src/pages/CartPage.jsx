@@ -5,31 +5,17 @@ import { formatPrice } from '../utils/moneyUtils';
 
 const CartPage = () => {
   const navigate = useNavigate();
-  const { 
-    cartItems, 
-    cartTotal, 
-    loading, 
-    error, 
-    removeFromCart, 
-    updateQuantity,
-    clearCart 
+  const {
+    cartItems,
+    cartTotal,
+    loading,
+    error,
+    removeFromCart,
+    clearCart
   } = useCart();
 
   const [removingItems, setRemovingItems] = useState(new Set());
-  const [updatingItems, setUpdatingItems] = useState(new Set());
 
-  // Handle quantity change
-  const handleQuantityChange = async (cartItemId, newQuantity) => {
-    if (newQuantity < 1) return;
-    
-    setUpdatingItems(prev => new Set([...prev, cartItemId]));
-    const success = await updateQuantity(cartItemId, newQuantity);
-    setUpdatingItems(prev => {
-      const updated = new Set(prev);
-      updated.delete(cartItemId);
-      return updated;
-    });
-  };
 
   // Handle item removal
   const handleRemoveItem = async (cartItemId) => {
@@ -129,7 +115,6 @@ const CartPage = () => {
                 const price = item.game_key?.price || gameKey.price || 0;
                 const quantity = item.quantity || 1;
                 const isRemoving = removingItems.has(item.id);
-                const isUpdating = updatingItems.has(item.id);
                 
                 return (
                   <div 
@@ -177,30 +162,6 @@ const CartPage = () => {
                           <span className="font-medium text-green-600">
                             {formatPrice(price)}
                           </span>
-                        </div>
-                        
-                        {/* Quantity Controls */}
-                        <div className="flex items-center gap-3">
-                          <span className="text-sm text-gray-600">Quantity:</span>
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => handleQuantityChange(item.id, quantity - 1)}
-                              disabled={quantity <= 1 || isUpdating}
-                              className="w-8 h-8 rounded bg-gray-200 text-gray-600 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-                            >
-                              -
-                            </button>
-                            <span className="font-medium min-w-[2rem] text-center">
-                              {isUpdating ? '...' : quantity}
-                            </span>
-                            <button
-                              onClick={() => handleQuantityChange(item.id, quantity + 1)}
-                              disabled={isUpdating}
-                              className="w-8 h-8 rounded bg-gray-200 text-gray-600 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-                            >
-                              +
-                            </button>
-                          </div>
                         </div>
                       </div>
 

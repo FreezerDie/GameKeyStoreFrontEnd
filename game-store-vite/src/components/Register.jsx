@@ -1,7 +1,10 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { registerUser } from '../utils/apiUtils';
 
 const Register = () => {
+  const navigate = useNavigate();
+
   const [formData, setFormData] = useState({
     name: '',
     username: '',
@@ -70,14 +73,13 @@ const Register = () => {
     try {
       // Use the new API utility function
       await registerUser(formData);
-      
-      setMessage('Registration successful!');
-      setFormData({
-        name: '',
-        username: '',
-        email: '',
-        password: ''
-      });
+
+      setMessage('Registration successful! Redirecting to login...');
+
+      // Redirect to login page after a short delay to show success message
+      setTimeout(() => {
+        navigate('/login');
+      }, 500);
     } catch (error) {
       // Handle different types of errors
       if (error.message.includes('HTTP error')) {

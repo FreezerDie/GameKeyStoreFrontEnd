@@ -66,7 +66,6 @@ const CheckoutPage = () => {
       const orderPayload = {
         cartItems: cartItems.map(item => ({
           game_key_id: item.game_key?.id,
-          quantity: item.quantity || 1,
           price: item.game_key?.price || 0
         })),
         total_price: cartTotal,
@@ -174,7 +173,6 @@ const CheckoutPage = () => {
                   const gameKey = item.game_key || {};
                   const game = item.game || gameKey.game || {};
                   const price = item.game_key?.price || gameKey.price || 0;
-                  const quantity = item.quantity || 1;
                   
                   return (
                     <div key={item.id} className="flex items-center gap-3">
@@ -206,16 +204,15 @@ const CheckoutPage = () => {
                         </h4>
                         <div className="text-xs text-gray-500">
                           {gameKey.key_type && (
-                            <span className="bg-gray-200 px-1.5 py-0.5 rounded text-xs mr-2">
+                            <span className="bg-gray-200 px-1.5 py-0.5 rounded text-xs">
                               {gameKey.key_type}
                             </span>
                           )}
-                          Qty: {quantity}
                         </div>
                       </div>
                       <div className="text-right">
                         <div className="font-semibold text-gray-800">
-                          {formatPrice(price * quantity)}
+                          {formatPrice(price)}
                         </div>
                       </div>
                     </div>
